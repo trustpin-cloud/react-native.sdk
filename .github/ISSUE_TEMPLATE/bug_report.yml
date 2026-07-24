@@ -1,0 +1,143 @@
+name: Bug Report
+description: Report a bug or issue with the TrustPin React Native SDK
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us diagnose and fix the issue.
+
+  - type: input
+    id: version
+    attributes:
+      label: TrustPin SDK Version
+      description: What version of the TrustPin React Native SDK (`@trustpin/react-native`) are you using?
+      placeholder: e.g., 6.2.0
+    validations:
+      required: true
+
+  - type: input
+    id: react-native-version
+    attributes:
+      label: React Native Version
+      description: What version of React Native are you using?
+      placeholder: e.g., 0.85.3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: setup
+    attributes:
+      label: Setup
+      description: How is the SDK integrated into your app?
+      options:
+        - Expo (config plugin)
+        - Bare React Native
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which platform are you experiencing the issue on?
+      options:
+        - iOS
+        - Android
+        - Both
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: Platform Version
+      description: What version of the platform OS are you using?
+      placeholder: e.g., iOS 17.0, Android 14
+    validations:
+      required: true
+
+  - type: dropdown
+    id: pinning-mode
+    attributes:
+      label: TrustPin Mode
+      description: Which pinning mode are you using?
+      options:
+        - strict
+        - permissive
+        - Not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the issue you're experiencing...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Configure TrustPin with...
+        2. Make a request to...
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: A clear and concise description of what actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-logs
+    attributes:
+      label: Error Messages/Logs
+      description: If applicable, add error messages or logs. Please enable debug logging with `await TrustPin.setLogLevel('debug')`
+      render: shell
+
+  - type: textarea
+    id: code-sample
+    attributes:
+      label: Code Sample
+      description: If applicable, add a minimal code sample that reproduces the issue
+      render: typescript
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here (network configuration, device specifics, etc.)
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to make sure this is not a duplicate
+          required: true
+        - label: I have enabled debug logging and included relevant logs
+          required: false
+        - label: I have tested with the latest version of TrustPin
+          required: true
+        - label: I have checked that my credentials (organization ID, project ID, public key) are correct
+          required: true

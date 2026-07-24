@@ -1,0 +1,7 @@
+{
+  "_comment": "Template for the Android TrustPin credentials. Copy to trustpin.json in this directory and fill in the values from https://app.trustpin.cloud. The real file is gitignored: these values are not secret, but they identify a specific project and do not belong in a public repository.",
+  "organization_id": "YOUR_ORGANIZATION_ID",
+  "project_id": "YOUR_PROJECT_ID",
+  "public_key": "YOUR_BASE64_EC_PUBLIC_KEY",
+  "mode": "strict"
+}

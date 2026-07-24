@@ -1,0 +1,30 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.build.json",
+  "out": "docs",
+  "name": "@trustpin/react-native",
+  "readme": "README.md",
+  "highlightLanguages": [
+    "bash",
+    "json",
+    "typescript",
+    "tsx",
+    "javascript",
+    "swift",
+    "kotlin",
+    "groovy",
+    "xml",
+    "yaml"
+  ],
+  "githubPages": true,
+  "hideGenerator": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "navigationLinks": {
+    "npm": "https://www.npmjs.com/package/@trustpin/react-native",
+    "GitHub": "https://github.com/trustpin-cloud/react-native.sdk",
+    "TrustPin": "https://trustpin.cloud"
+  }
+}

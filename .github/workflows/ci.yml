@@ -1,0 +1,124 @@
+name: ci
+
+# Unit tests only. CI never exercises pinning — that is verified by hand on the
+# sample apps, which is the only place a real TrustPin configuration exists. CI
+# therefore needs no credentials and no secrets. (The iOS job compiles the
+# example app because XCTest bundles are app-hosted, but it only runs the native
+# unit tests; it never configures or exercises pinning.)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  js:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22.11 is the React Native 0.85 floor; 24 is what we develop against.
+        node: ['24', '22.11']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      # Library JS module + Expo config plugin fixtures.
+      - run: npm test -- --ci
+
+      # Static release guards. Not tests, but cheap, and the pack check is what
+      # stands between a slip in `files` and publishing credentials from a
+      # public repository.
+      - name: Version lockstep
+        if: matrix.node == '24'
+        run: ./scripts/check-version-lockstep.sh
+      - name: Package contents
+        if: matrix.node == '24'
+        run: ./scripts/check-pack-contents.sh
+
+  kotlin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: example/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      # The library's Gradle module is consumed through the example app, which
+      # supplies React Native's Gradle plugin and autolinking. Only the test
+      # task runs — the app itself is never assembled.
+      - run: npm ci
+        working-directory: example
+      - name: Kotlin unit tests
+        working-directory: example/android
+        # React Native rewrites @trustpin/react-native to this project name.
+        run: ./gradlew :trustpin_react-native:testDebugUnitTest
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: kotlin-test-reports
+          path: android/build/reports/tests/**
+
+  swift:
+    # macOS is required for Xcode + the iOS Simulator. TrustPinKit resolves from
+    # the public CocoaPods trunk, so this job still needs no credentials.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: example/package-lock.json
+      # The library's Swift sources are compiled through the example app, which
+      # supplies React Native's pods and autolinking. Only the test bundle runs
+      # — the app is built solely as the XCTest host.
+      - run: npm ci
+        working-directory: example
+      - name: Install pods
+        working-directory: example/ios
+        run: pod install
+      - name: Swift unit tests
+        working-directory: example/ios
+        # Auto-select an available iPhone simulator on the runner. Only the
+        # TrustPinExampleTests bundle runs (ios/Tests/**); pinning is never
+        # exercised.
+        run: |
+          UDID=$(xcrun simctl list devices available \
+            | grep -oE 'iPhone[^(]*\([0-9A-F-]{36}\)' \
+            | grep -oE '[0-9A-F-]{36}' | head -1)
+          if [ -z "$UDID" ]; then echo "No available iOS Simulator" >&2; exit 1; fi
+          echo "Testing on simulator $UDID"
+          xcodebuild test \
+            -workspace TrustPinExample.xcworkspace \
+            -scheme TrustPinExample \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -only-testing:TrustPinExampleTests \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: swift-test-results
+          path: example/ios/TestResults.xcresult

@@ -1,0 +1,24 @@
+buildscript {
+    ext {
+        buildToolsVersion = "36.0.0"
+        // TrustPin requires 25; React Native's default is 24.
+        minSdkVersion = 25
+        compileSdkVersion = 36
+        targetSdkVersion = 36
+        ndkVersion = "27.1.12297006"
+        // The TrustPin Kotlin SDK ships Kotlin 2.3.0 metadata, which React Native's
+        // default Kotlin plugin (2.1.20) cannot read.
+        kotlinVersion = "2.3.0"
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0")
+    }
+}
+
+apply plugin: "com.facebook.react.rootproject"

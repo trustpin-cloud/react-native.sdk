@@ -1,0 +1,50 @@
+# Node / build output
+node_modules/
+lib/
+plugin/build/
+coverage/
+*.log
+*.tsbuildinfo
+
+# Generated API reference — TypeDoc output, deployed to GitHub Pages, not committed.
+docs/
+
+# This project standardizes on npm; a stray yarn.lock must never be committed.
+yarn.lock
+
+# macOS
+.DS_Store
+
+# Android
+android/build/
+android/.gradle/
+android/local.properties
+
+# iOS / CocoaPods (example apps get their own Pods entries)
+ios/build/
+# XCTest result bundles from scripts/test-ios.sh and the CI swift job.
+*.xcresult
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Release script backups
+*.bak
+
+.claude
+
+# Expo regenerates these from app.config.js and the config plugin; the
+# prebuild itself is the test, so the output is not committed.
+example-expo/ios/
+example-expo/android/
+example-expo/.expo/
+
+# TrustPin credentials — kept out of the repo (this repository is public).
+# Each path has a committed `.example` template alongside it; copy the template
+# to the real filename and fill in values from https://app.trustpin.cloud.
+**/TrustPin-Info.plist
+!**/TrustPin-Info.plist.example
+**/trustpin.json
+!**/trustpin.json.example

@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: TrustPin Documentation
+    url: https://github.com/trustpin-cloud/react-native.sdk
+    about: Check our comprehensive API documentation
+  - name: TrustPin Dashboard
+    url: https://app.trustpin.cloud
+    about: Manage your certificates and configurations
+  - name: Security Issues
+    url: mailto:security@trustpin.cloud
+    about: Report security vulnerabilities privately
+  - name: Support
+    url: mailto:support@trustpin.cloud
+    about: Contact our support team for urgent issues

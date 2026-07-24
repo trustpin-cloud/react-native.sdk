@@ -1,0 +1,111 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  # Cheap version/tag checks first, before the publish job runs.
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read versions
+        id: v
+        run: |
+          echo "tag=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          echo "pkg=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Version carries no prerelease suffix
+        run: |
+          case "${{ steps.v.outputs.pkg }}" in
+            *-*) echo "package.json is ${{ steps.v.outputs.pkg }} — drop the prerelease suffix before tagging"; exit 1 ;;
+          esac
+
+      - name: Tag matches package.json
+        run: |
+          [ "${{ steps.v.outputs.tag }}" = "${{ steps.v.outputs.pkg }}" ] || {
+            echo "tag v${{ steps.v.outputs.tag }} does not match package.json ${{ steps.v.outputs.pkg }}"
+            exit 1
+          }
+
+      - name: Tag is on main
+        run: |
+          git branch -r --contains "$GITHUB_REF" | grep -q 'origin/main' || {
+            echo "refusing to publish a tag that is not on main"
+            exit 1
+          }
+
+      - name: Version lockstep
+        run: ./scripts/check-version-lockstep.sh
+
+      - name: Version not already published
+        run: |
+          if npm view "@trustpin/react-native@${{ steps.v.outputs.tag }}" version >/dev/null 2>&1; then
+            echo "@trustpin/react-native@${{ steps.v.outputs.tag }} is already on npm"
+            exit 1
+          fi
+
+      - name: License is the proprietary one
+        run: |
+          test -f LICENSE || { echo "LICENSE is missing"; exit 1; }
+          grep -q 'TrustPin Binary License' LICENSE || {
+            echo "LICENSE is not the TrustPin Binary License — an MIT stub must never ship"
+            exit 1
+          }
+
+  ci:
+    needs: gate
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: ci
+    runs-on: ubuntu-latest # Trusted publishing requires a GitHub-hosted runner.
+    # This job holds no npm secret. npm mints a short-lived credential from the
+    # job's OIDC identity (id-token below), matched against the Trusted Publisher
+    # configured on npmjs for @trustpin/react-native (org trustpin-cloud, repo
+    # react-native.sdk, workflow release.yml, environment npm-publish).
+    #
+    # That publisher is configured stage-only, so this job can only *stage* the
+    # release — it never goes public unattended. A maintainer promotes it with
+    # `npm stage approve <id>` + 2FA (see the notice printed at the end).
+    # Required reviewers on the environment gate the run itself.
+    environment: npm-publish
+    permissions:
+      contents: write # GitHub Release
+      id-token: write # OIDC: trusted publishing + provenance
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      # Node 24 ships an older npm 11.x; staged publishing needs npm >= 11.15.0
+      # (trusted publishing alone needs >= 11.5.1). Pin a new-enough CLI.
+      - run: npm install -g npm@latest
+      # prepack runs the TypeScript builds, so lib/ and plugin/build are
+      # produced here rather than trusted from an artifact.
+      - run: npm ci
+      - name: Stage publish (OIDC, no token)
+        # No NODE_AUTH_TOKEN: the OIDC exchange authenticates the publish.
+        # Provenance is automatic under trusted publishing; the flag is explicit
+        # belt-and-suspenders. This uploads the tarball to the staging area; it
+        # is NOT installable until a maintainer approves it.
+        run: npm stage publish --provenance --access public
+      - name: GitHub Release
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Approval required to go live
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          echo "::notice title=Staged, awaiting approval::@trustpin/react-native@${v} is staged, not yet public."
+          echo "::notice title=How to promote::A maintainer runs: npm stage list @trustpin/react-native → npm stage view <id> → npm stage approve <id> (prompts for 2FA). Or approve at npmjs.com → package → Staged Packages."
