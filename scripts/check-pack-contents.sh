@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# Asserts the npm tarball carries everything a consumer needs and nothing that
-# should never leave this repository.
+# Asserts the npm tarball carries everything a consumer needs and nothing it
+# shouldn't.
 #
 #   scripts/check-pack-contents.sh [pack.json]
 #
 # With no argument it runs `npm pack --dry-run --json` itself. The `files`
 # allowlist in package.json already aims for this; the point here is that the
-# guarantee is asserted rather than assumed, because a slip publishes
-# credentials from a public repository.
+# guarantee is asserted rather than assumed.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

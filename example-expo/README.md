@@ -26,8 +26,7 @@ npx expo run:ios      # or: npx expo run:android
 
 `app.config.js` reads the three values from the environment. Without them it
 falls back to obvious `PLACEHOLDER_*` values so that prebuild and both native
-builds still work — which is what lets CI compile-check the plugin with no
-TrustPin project attached.
+builds still work without a TrustPin project attached.
 
 Placeholders are not a working configuration: pinning fails closed, every HTTPS
 request is refused, and `awaitConfiguration` rejects with
@@ -50,9 +49,8 @@ blocks `TrustPin-Info.plist` and `trustpin.json` anywhere in the tree.
 
 ## What prebuild produces
 
-`ios/` and `android/` are generated and gitignored. CI does not build this app —
-pinning is verified by hand — so after a prebuild, check the plugin's work
-yourself:
+`ios/` and `android/` are generated and gitignored. After a prebuild, check the
+plugin's work yourself:
 
 ```sh
 ../scripts/assert-prebuild-output.sh ios .

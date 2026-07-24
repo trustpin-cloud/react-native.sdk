@@ -15,7 +15,7 @@ ordinary `fetch` that is pinned without any per-request opt-in.
    ```
 
 2. Add credentials from https://app.trustpin.cloud. The real files are
-   gitignored — this repository is public — so copy the templates:
+   gitignored, so copy the templates:
 
    ```sh
    cp ios/TrustPinExample/TrustPin-Info.plist.example \
@@ -53,6 +53,5 @@ ordinary `fetch` that is pinned without any per-request opt-in.
 ## Native bootstrap notes
 
 The app starts TrustPin during native startup and keeps the JS surface
-observe-only. The repo's example is intentionally minimal so it stays focused on
-post-startup behavior and event handling rather than internals of the native
-bootstrap process.
+observe-only. The example is intentionally minimal so it stays focused on
+post-startup behavior and event handling.

@@ -1,11 +1,5 @@
 name: ci
 
-# Unit tests only. CI never exercises pinning — that is verified by hand on the
-# sample apps, which is the only place a real TrustPin configuration exists. CI
-# therefore needs no credentials and no secrets. (The iOS job compiles the
-# example app because XCTest bundles are app-hosted, but it only runs the native
-# unit tests; it never configures or exercises pinning.)
-
 on:
   push:
     branches: [main]
@@ -39,9 +33,7 @@ jobs:
       # Library JS module + Expo config plugin fixtures.
       - run: npm test -- --ci
 
-      # Static release guards. Not tests, but cheap, and the pack check is what
-      # stands between a slip in `files` and publishing credentials from a
-      # public repository.
+      # Static release guards.
       - name: Version lockstep
         if: matrix.node == '24'
         run: ./scripts/check-version-lockstep.sh
@@ -66,8 +58,7 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
       # The library's Gradle module is consumed through the example app, which
-      # supplies React Native's Gradle plugin and autolinking. Only the test
-      # task runs — the app itself is never assembled.
+      # supplies React Native's Gradle plugin and autolinking.
       - run: npm ci
         working-directory: example
       - name: Kotlin unit tests
@@ -81,8 +72,7 @@ jobs:
           path: android/build/reports/tests/**
 
   swift:
-    # macOS is required for Xcode + the iOS Simulator. TrustPinKit resolves from
-    # the public CocoaPods trunk, so this job still needs no credentials.
+    # macOS is required for Xcode + the iOS Simulator.
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -92,8 +82,7 @@ jobs:
           cache: npm
           cache-dependency-path: example/package-lock.json
       # The library's Swift sources are compiled through the example app, which
-      # supplies React Native's pods and autolinking. Only the test bundle runs
-      # — the app is built solely as the XCTest host.
+      # supplies React Native's pods and autolinking.
       - run: npm ci
         working-directory: example
       - name: Install pods
@@ -102,8 +91,7 @@ jobs:
       - name: Swift unit tests
         working-directory: example/ios
         # Auto-select an available iPhone simulator on the runner. Only the
-        # TrustPinExampleTests bundle runs (ios/Tests/**); pinning is never
-        # exercised.
+        # TrustPinExampleTests bundle runs (ios/Tests/**).
         run: |
           UDID=$(xcrun simctl list devices available \
             | grep -oE 'iPhone[^(]*\([0-9A-F-]{36}\)' \

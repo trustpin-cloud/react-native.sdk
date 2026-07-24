@@ -41,7 +41,7 @@ example-expo/ios/
 example-expo/android/
 example-expo/.expo/
 
-# TrustPin credentials — kept out of the repo (this repository is public).
+# TrustPin credentials — kept out of the repo.
 # Each path has a committed `.example` template alongside it; copy the template
 # to the real filename and fill in values from https://app.trustpin.cloud.
 **/TrustPin-Info.plist

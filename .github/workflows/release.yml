@@ -52,11 +52,11 @@ jobs:
             exit 1
           fi
 
-      - name: License is the proprietary one
+      - name: License check
         run: |
           test -f LICENSE || { echo "LICENSE is missing"; exit 1; }
           grep -q 'TrustPin Binary License' LICENSE || {
-            echo "LICENSE is not the TrustPin Binary License — an MIT stub must never ship"
+            echo "LICENSE is not the TrustPin Binary License"
             exit 1
           }
 
@@ -67,15 +67,6 @@ jobs:
   publish:
     needs: ci
     runs-on: ubuntu-latest # Trusted publishing requires a GitHub-hosted runner.
-    # This job holds no npm secret. npm mints a short-lived credential from the
-    # job's OIDC identity (id-token below), matched against the Trusted Publisher
-    # configured on npmjs for @trustpin/react-native (org trustpin-cloud, repo
-    # react-native.sdk, workflow release.yml, environment npm-publish).
-    #
-    # That publisher is configured stage-only, so this job can only *stage* the
-    # release — it never goes public unattended. A maintainer promotes it with
-    # `npm stage approve <id>` + 2FA (see the notice printed at the end).
-    # Required reviewers on the environment gate the run itself.
     environment: npm-publish
     permissions:
       contents: write # GitHub Release
@@ -95,10 +86,6 @@ jobs:
       # produced here rather than trusted from an artifact.
       - run: npm ci
       - name: Stage publish (OIDC, no token)
-        # No NODE_AUTH_TOKEN: the OIDC exchange authenticates the publish.
-        # Provenance is automatic under trusted publishing; the flag is explicit
-        # belt-and-suspenders. This uploads the tarball to the staging area; it
-        # is NOT installable until a maintainer approves it.
         run: npm stage publish --provenance --access public
       - name: GitHub Release
         run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
