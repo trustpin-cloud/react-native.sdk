@@ -105,7 +105,7 @@ dependencies {
     // the example passes the typed `.debug`.
     api("cloud.trustpin:kotlin-sdk") {
         version {
-            strictly("[6.2.0, 6.3.0)")
+            strictly("[6.3.0, 6.4.0)")
         }
     }
 

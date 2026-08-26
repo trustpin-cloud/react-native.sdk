@@ -16,6 +16,18 @@ export interface TrustPinPluginProps {
   configurationUrl?: string;
   /** Verbosity passed to the native init helper, before setup runs. */
   logLevel?: 'none' | 'error' | 'info' | 'debug';
+  /**
+   * Path, relative to the project root, of a signed configuration downloaded
+   * from the TrustPin dashboard. The plugin copies it into both native
+   * bundles and points the generated config files at it, so the SDK can fall
+   * back to it when no online source and no previously fetched configuration
+   * is available, typically the app's very first start during an outage.
+   *
+   * Use it only in apps protected by runtime application self-protection
+   * (RASP) that guards bundled resources against modification, and regenerate
+   * the file in CI on every release so it never goes stale.
+   */
+  embeddedConfigurationFile?: string;
   ios?: {
     /** Path to an existing TrustPin-Info.plist, relative to the project root. */
     configFile?: string;
@@ -100,6 +112,20 @@ export function resolveProps(props: TrustPinPluginProps | undefined): TrustPinPl
     throw new TrustPinPluginError(
       `logLevel must be one of ${LOG_LEVELS.join(', ')}; got "${resolved.logLevel}".`,
     );
+  }
+
+  if (resolved.embeddedConfigurationFile) {
+    for (const platform of ['ios', 'android'] as const) {
+      if (resolved[platform]?.configFile) {
+        throw new TrustPinPluginError(
+          `embeddedConfigurationFile is set together with ${platform}.configFile. ` +
+            'The plugin can only add the embedded-configuration key to a config ' +
+            'file it generates; declare it in your own file instead ' +
+            '(EmbeddedConfigurationFile / embedded_configuration_asset) and ship ' +
+            'the payload with the app yourself.',
+        );
+      }
+    }
   }
 
   if (resolved.configurationUrl && !resolved.configurationUrl.startsWith('https://')) {

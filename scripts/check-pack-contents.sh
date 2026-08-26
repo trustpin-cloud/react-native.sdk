@@ -17,9 +17,17 @@ if [ -z "$PACK_JSON" ]; then
   npm pack --dry-run --json > "$PACK_JSON" 2>/dev/null
 fi
 
+# `npm pack --json` reports an array of packed packages up to npm 11, and an
+# object keyed by package name from npm 12 on. Accept both so the guard keeps
+# working across the npm versions CI and developers actually run.
 FILES=$(node -e "
   const d = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'));
-  console.log(d[0].files.map(f => f.path).join('\n'));
+  const packed = Array.isArray(d) ? d : Object.values(d);
+  if (!packed[0] || !packed[0].files) {
+    console.error('unexpected \`npm pack --json\` output; cannot read the file list');
+    process.exit(1);
+  }
+  console.log(packed[0].files.map(f => f.path).join('\n'));
 " "$PACK_JSON")
 
 failures=0

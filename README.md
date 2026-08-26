@@ -22,6 +22,7 @@ holds no lever that disables or reconfigures pinning.
 - [Installation](#installation)
 - [Setup — Expo](#setup--expo)
 - [Setup — bare React Native](#setup--bare-react-native)
+- [Embedded configuration](#embedded-configuration)
 - [Using the SDK](#using-the-sdk)
 - [API reference](#api-reference)
 - [Error handling](#error-handling)
@@ -97,6 +98,7 @@ The config plugin accepts these props:
 | `mode` | `strict` \| `permissive` | Defaults to `strict`. |
 | `configurationUrl` | string | Optional. HTTPS endpoint for a self-hosted signed config. |
 | `logLevel` | `none` \| `error` \| `info` \| `debug` | Passed to the native init helper, so it also covers startup logging. |
+| `embeddedConfigurationFile` | string | Optional. Path to a signed configuration bundled as a last-resort fallback. See [Embedded configuration](#embedded-configuration). |
 | `ios.configFile` | string | Path to an existing `TrustPin-Info.plist` instead of generating one. |
 | `android.configFile` | string | Path to an existing `trustpin.json` instead of generating one. |
 | `android.allowNonOemImages` | boolean | Default `false`. Allows release builds on non-OEM device OS images (real devices only, not emulators). |
@@ -151,6 +153,7 @@ automatically):
 | public key | yes | base64-encoded verification key |
 | mode | no | `strict` (default, production) or `permissive` |
 | configuration URL | no | HTTPS URL for a self-hosted signed config |
+| embedded configuration | no | `EmbeddedConfigurationFile` (plist) / `embedded_configuration_asset` (JSON). See [Embedded configuration](#embedded-configuration) |
 
 ### 2. Call the native init helper
 
@@ -202,6 +205,67 @@ buildscript {
 ```
 
 Then `cd ios && pod install`, and rebuild the app.
+
+## Embedded configuration
+
+TrustPin fetches its signed pinning configuration online and keeps the last
+validated one on the device. For the one case where neither exists, the app's
+**very first start while every configuration source is unreachable**, you can
+ship a signed configuration inside the app as a last-resort fallback.
+
+Download the signed configuration for your project from the TrustPin dashboard,
+then:
+
+**Expo**: point the plugin at it; prebuild copies it into both native projects
+and adds the matching key to the generated config files:
+
+```json
+["@trustpin/react-native", {
+  "organizationId": "your-org-id",
+  "projectId": "your-project-id",
+  "publicKey": "LS0tLS1CRUdJTi...",
+  "embeddedConfigurationFile": "./trustpin-seed.b64"
+}]
+```
+
+It cannot be combined with `ios.configFile` / `android.configFile`: the plugin
+only adds the key to files it generates. With your own config files, declare
+the key yourself and ship the payload as shown below.
+
+**Bare React Native**: ship the file and reference it by name:
+
+- **iOS**: add `ios/<YourApp>/trustpin-seed.b64` to the app target's **Copy
+  Bundle Resources**, then add to `TrustPin-Info.plist`:
+  ```xml
+  <key>EmbeddedConfigurationFile</key>
+  <string>trustpin-seed.b64</string>
+  ```
+- **Android**: add `android/app/src/main/assets/trustpin-seed.b64`, then add to
+  `trustpin.json`:
+  ```json
+  "embedded_configuration_asset": "trustpin-seed.b64"
+  ```
+
+### Requirements
+
+- **Use it only in apps protected by RASP** (runtime application
+  self-protection) that guards bundled resources against modification. An
+  unprotected app must not ship an embedded configuration.
+- **The file must be the unmodified signed payload** from the dashboard. It is
+  verified against `publicKey` during native setup; a file that is missing,
+  unreadable, or fails verification fails startup with
+  `INVALID_PROJECT_CONFIG`.
+- **Regenerate it in CI on every release**, so it is never older than the app
+  that ships it. Pins expire on their own schedule, and an embedded configuration
+  whose pins have all expired is equivalent to having no fallback.
+
+### Behaviour
+
+- It is never preferred over an online source or over a configuration the SDK
+  has already fetched and validated.
+- It is subject to the same integrity checks as any other configuration: a
+  device that has already trusted a newer configuration will not accept an
+  older embedded one.
 
 ## Using the SDK
 
