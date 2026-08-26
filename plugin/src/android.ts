@@ -33,6 +33,11 @@ export function buildAssetJson(props: TrustPinPluginProps): string {
   if (props.configurationUrl) {
     config.configuration_url = props.configurationUrl;
   }
+  if (props.embeddedConfigurationFile) {
+    // The native loader resolves this as an asset name, so only the file name
+    // travels into the JSON.
+    config.embedded_configuration_asset = path.basename(props.embeddedConfigurationFile);
+  }
   return `${JSON.stringify(config, null, 2)}\n`;
 }
 
@@ -159,6 +164,16 @@ const withTrustPinAsset: ConfigPlugin<TrustPinPluginProps> = (config, props) =>
 
       fs.mkdirSync(assetsDir, { recursive: true });
       fs.writeFileSync(path.join(assetsDir, ASSET_FILE_NAME), contents);
+
+      // Gradle bundles everything under assets/ into the APK, so copying the
+      // signed configuration here is all the native asset loader needs.
+      if (props.embeddedConfigurationFile) {
+        const source = path.resolve(projectRoot, props.embeddedConfigurationFile);
+        if (!fs.existsSync(source)) {
+          throw new TrustPinPluginError(`embeddedConfigurationFile not found: ${source}`);
+        }
+        fs.copyFileSync(source, path.join(assetsDir, path.basename(source)));
+      }
       return modConfig;
     },
   ]);

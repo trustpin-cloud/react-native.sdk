@@ -87,6 +87,22 @@ describe('prop validation', () => {
     expect(() => resolveProps(undefined)).toThrow(TrustPinPluginError);
   });
 
+  it('rejects an embedded configuration alongside a user-supplied config file', () => {
+    expect(() =>
+      resolveProps({
+        embeddedConfigurationFile: './trustpin-seed.b64',
+        ios: { configFile: './TrustPin-Info.plist' },
+        android: { configFile: './trustpin.json' },
+      }),
+    ).toThrow(TrustPinPluginError);
+  });
+
+  it('accepts an embedded configuration alongside inline credentials', () => {
+    expect(() =>
+      resolveProps({ ...CREDENTIALS, embeddedConfigurationFile: './trustpin-seed.b64' }),
+    ).not.toThrow();
+  });
+
   it('rejects invalid enum values and non-https configuration URLs', () => {
     expect(() => resolveProps({ ...CREDENTIALS, mode: 'loose' as 'strict' })).toThrow(/mode/);
     expect(() => resolveProps({ ...CREDENTIALS, logLevel: 'verbose' as 'debug' })).toThrow(
@@ -111,6 +127,29 @@ describe('generated config files', () => {
   it('escapes XML in plist values', () => {
     const plist = buildPlist({ ...CREDENTIALS, organizationId: 'a&b<c>' });
     expect(plist).toContain('a&amp;b&lt;c&gt;');
+  });
+
+  it('points the plist at the embedded configuration by file name only', () => {
+    const plist = buildPlist({
+      ...CREDENTIALS,
+      embeddedConfigurationFile: './config/trustpin-seed.b64',
+    });
+    expect(plist).toContain('<key>EmbeddedConfigurationFile</key>');
+    // The native loader resolves a resource name in the bundle, not a path.
+    expect(plist).toContain('<string>trustpin-seed.b64</string>');
+    expect(plist).not.toContain('config/trustpin-seed.b64');
+  });
+
+  it('omits the embedded key when no file is configured', () => {
+    expect(buildPlist({ ...CREDENTIALS })).not.toContain('EmbeddedConfigurationFile');
+    expect(buildAssetJson({ ...CREDENTIALS })).not.toContain('embedded_configuration_asset');
+  });
+
+  it('points the Android asset JSON at the embedded configuration by file name only', () => {
+    const json = JSON.parse(
+      buildAssetJson({ ...CREDENTIALS, embeddedConfigurationFile: './config/trustpin-seed.b64' }),
+    );
+    expect(json.embedded_configuration_asset).toBe('trustpin-seed.b64');
   });
 
   it('writes snake_case JSON keys for Android', () => {

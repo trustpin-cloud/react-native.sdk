@@ -31,8 +31,8 @@ Pod::Spec.new do |s|
   ]
   s.pod_target_xcconfig = { "DEFINES_MODULE" => "YES" }
 
-  # Native SDK, locked to the 6.2.x.
-  s.dependency "TrustPinKit", "~> 6.2.0"
+  # Native SDK, locked to the 6.3.x.
+  s.dependency "TrustPinKit", "~> 6.3.0"
 
   # React Native core + New Architecture (TurboModule codegen) dependencies.
   install_modules_dependencies(s)

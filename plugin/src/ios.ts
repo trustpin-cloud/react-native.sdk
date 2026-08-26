@@ -25,6 +25,11 @@ export function buildPlist(props: TrustPinPluginProps): string {
   if (props.configurationUrl) {
     entries.push(['ConfigurationURL', props.configurationUrl]);
   }
+  if (props.embeddedConfigurationFile) {
+    // The native loader resolves this as a resource name in the same bundle,
+    // so only the file name travels into the plist.
+    entries.push(['EmbeddedConfigurationFile', path.basename(props.embeddedConfigurationFile)]);
+  }
 
   const body = entries
     .map(([key, value]) => `\t<key>${key}</key>\n\t<string>${escapeXml(value)}</string>`)
@@ -100,6 +105,53 @@ const withTrustPinPlist: ConfigPlugin<TrustPinPluginProps> = (config, props) =>
     },
   ]);
 
+/**
+ * Copies the embedded configuration next to the plist. Writing the file is
+ * only half the job: `withEmbeddedSeedInBundle` adds it to the app target so
+ * the native loader can resolve it at runtime.
+ */
+const withEmbeddedSeed: ConfigPlugin<TrustPinPluginProps> = (config, props) =>
+  withDangerousMod(config, [
+    'ios',
+    async modConfig => {
+      if (!props.embeddedConfigurationFile) {
+        return modConfig;
+      }
+      const projectRoot = modConfig.modRequest.projectRoot;
+      const platformRoot = modConfig.modRequest.platformProjectRoot;
+      const appName = IOSConfig.XcodeUtils.getProjectName(projectRoot);
+      const source = path.resolve(projectRoot, props.embeddedConfigurationFile);
+      if (!fs.existsSync(source)) {
+        throw new TrustPinPluginError(`embeddedConfigurationFile not found: ${source}`);
+      }
+      const destination = path.join(platformRoot, appName, path.basename(source));
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.copyFileSync(source, destination);
+      return modConfig;
+    },
+  ]);
+
+const withEmbeddedSeedInBundle: ConfigPlugin<TrustPinPluginProps> = (config, props) =>
+  withXcodeProject(config, modConfig => {
+    if (!props.embeddedConfigurationFile) {
+      return modConfig;
+    }
+    const project = modConfig.modResults;
+    const projectName = IOSConfig.XcodeUtils.getProjectName(modConfig.modRequest.projectRoot);
+    const filePath = `${projectName}/${path.basename(props.embeddedConfigurationFile)}`;
+
+    if (!project.hasFile(filePath)) {
+      IOSConfig.XcodeUtils.addResourceFileToGroup({
+        filepath: filePath,
+        groupName: projectName,
+        project,
+        isBuildFile: true,
+        verbose: false,
+      });
+    }
+    return modConfig;
+  });
+
 function readUserConfigFile(projectRoot: string, configFile: string): string {
   const source = path.resolve(projectRoot, configFile);
   if (!fs.existsSync(source)) {
@@ -145,5 +197,7 @@ const withInitCall: ConfigPlugin<TrustPinPluginProps> = (config, props) =>
 export const withTrustPinIos: ConfigPlugin<TrustPinPluginProps> = (config, props) => {
   let next = withTrustPinPlist(config, props);
   next = withPlistInBundle(next);
+  next = withEmbeddedSeed(next, props);
+  next = withEmbeddedSeedInBundle(next, props);
   return withInitCall(next, props);
 };
