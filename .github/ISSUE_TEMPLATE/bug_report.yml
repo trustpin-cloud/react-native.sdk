@@ -13,7 +13,7 @@ body:
     attributes:
       label: TrustPin SDK Version
       description: What version of the TrustPin React Native SDK (`@trustpin/react-native`) are you using?
-      placeholder: e.g., 6.2.0
+      placeholder: e.g., 6.4.0
     validations:
       required: true
 

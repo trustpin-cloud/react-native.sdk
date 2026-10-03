@@ -12,7 +12,11 @@ export interface TrustPinPluginProps {
   publicKey?: string;
   /** `strict` (default, production) rejects unregistered domains. */
   mode?: 'strict' | 'permissive';
-  /** Optional HTTPS endpoint for a self-hosted signed configuration. */
+  /**
+   * Optional HTTPS endpoint for a self-hosted signed configuration. It must
+   * point at a public host: the native SDK rejects loopback and private
+   * addresses.
+   */
   configurationUrl?: string;
   /** Verbosity passed to the native init helper, before setup runs. */
   logLevel?: 'none' | 'error' | 'info' | 'debug';

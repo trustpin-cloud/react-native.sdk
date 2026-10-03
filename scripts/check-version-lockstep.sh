@@ -2,7 +2,7 @@
 # Asserts that every place carrying a version or floor agrees.
 #
 # Three independent locksteps, each of which can ship a broken SDK silently:
-#   1. The native SDK line (plugin 6.2.x <-> native 6.2.x)
+#   1. The native SDK line (plugin 6.4.x <-> native 6.4.x)
 #   2. The Kotlin toolchain floor, required by the native SDK's metadata
 #   3. The Android minSdk floor
 #
@@ -32,7 +32,7 @@ extract() {
 
 PKG_VERSION=$(node -p "require('./package.json').version")
 PKG_LINE=${PKG_VERSION%%-*}                      # drop any -dev suffix
-PKG_MINOR=${PKG_LINE%.*}                         # 6.2.0 -> 6.2
+PKG_MINOR=${PKG_LINE%.*}                         # 6.4.0 -> 6.4
 
 POD_DEP=$(extract TrustPinReactNative.podspec 's/.*s\.dependency "TrustPinKit", "~> ([0-9]+\.[0-9]+\.[0-9]+)".*/\1/p')
 GRADLE_LOWER=$(extract android/build.gradle 's/.*strictly\("\[([0-9]+\.[0-9]+\.[0-9]+), *([0-9]+\.[0-9]+\.[0-9]+)\)"\).*/\1/p')
