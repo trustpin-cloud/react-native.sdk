@@ -94,7 +94,7 @@ dependencies {
     // Version supplied by the consuming app's React Native Gradle plugin.
     implementation "com.facebook.react:react-android"
 
-    // Pin the native SDK to the 6.2.x patch line. `strictly` prevents Gradle's
+    // Pin the native SDK to the 6.4.x patch line. `strictly` prevents Gradle's
     // conflict resolution from silently selecting a newer minor or major
     // pulled in transitively by the consuming app.
     //
@@ -105,7 +105,7 @@ dependencies {
     // the example passes the typed `.debug`.
     api("cloud.trustpin:kotlin-sdk") {
         version {
-            strictly("[6.3.0, 6.4.0)")
+            strictly("[6.4.0, 6.5.0)")
         }
     }
 

@@ -96,7 +96,7 @@ The config plugin accepts these props:
 | `projectId` | string | Required unless using `configFile`. |
 | `publicKey` | string | Base64 verification key. Required unless using `configFile`. |
 | `mode` | `strict` \| `permissive` | Defaults to `strict`. |
-| `configurationUrl` | string | Optional. HTTPS endpoint for a self-hosted signed config. |
+| `configurationUrl` | string | Optional. HTTPS endpoint for a self-hosted signed config. Must point at a public host: loopback and private addresses are rejected by the native SDK. |
 | `logLevel` | `none` \| `error` \| `info` \| `debug` | Passed to the native init helper, so it also covers startup logging. |
 | `embeddedConfigurationFile` | string | Optional. Path to a signed configuration bundled as a last-resort fallback. See [Embedded configuration](#embedded-configuration). |
 | `ios.configFile` | string | Path to an existing `TrustPin-Info.plist` instead of generating one. |
@@ -152,7 +152,7 @@ automatically):
 | project ID | yes | non-empty string |
 | public key | yes | base64-encoded verification key |
 | mode | no | `strict` (default, production) or `permissive` |
-| configuration URL | no | HTTPS URL for a self-hosted signed config |
+| configuration URL | no | HTTPS URL on a public host for a self-hosted signed config (loopback/private addresses are rejected) |
 | embedded configuration | no | `EmbeddedConfigurationFile` (plist) / `embedded_configuration_asset` (JSON). See [Embedded configuration](#embedded-configuration) |
 
 ### 2. Call the native init helper
