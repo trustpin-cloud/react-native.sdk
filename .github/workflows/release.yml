@@ -47,12 +47,14 @@ jobs:
 
       - name: Version not already published
         run: |
-          for name in @trustpin/react-native @trustpin/react-native-attest; do
-            if npm view "${name}@${{ steps.v.outputs.tag }}" version >/dev/null 2>&1; then
-              echo "${name}@${{ steps.v.outputs.tag }} is already on npm"
-              exit 1
-            fi
-          done
+          # The pinning package defines the release. The attestation package
+          # may already be there: npm only accepts a trusted publisher for a
+          # package that exists, so its first version is published by hand,
+          # and the publish job then skips it.
+          if npm view "@trustpin/react-native@${{ steps.v.outputs.tag }}" version >/dev/null 2>&1; then
+            echo "@trustpin/react-native@${{ steps.v.outputs.tag }} is already on npm"
+            exit 1
+          fi
 
       - name: License check
         run: |
@@ -95,7 +97,13 @@ jobs:
       # builds with the repository root's devDependencies.
       - name: Stage publish @trustpin/react-native-attest (OIDC, no token)
         working-directory: attest
-        run: npm stage publish --provenance --access public
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          if npm view "@trustpin/react-native-attest@${v}" version >/dev/null 2>&1; then
+            echo "::notice::@trustpin/react-native-attest@${v} is already on npm (published by hand); skipping."
+          else
+            npm stage publish --provenance --access public
+          fi
       - name: GitHub Release
         run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
         env:
