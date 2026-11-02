@@ -94,7 +94,7 @@ dependencies {
     // Version supplied by the consuming app's React Native Gradle plugin.
     implementation "com.facebook.react:react-android"
 
-    // Pin the native SDK to the 7.1.x patch line. `strictly` prevents Gradle's
+    // Pin the native SDK to the 7.1.x patch line, from 7.1.1. `strictly` prevents Gradle's
     // conflict resolution from silently selecting a newer minor or major
     // pulled in transitively by the consuming app.
     //
@@ -105,17 +105,17 @@ dependencies {
     // the example passes the typed `.debug`.
     api("cloud.trustpin:kotlin-sdk") {
         version {
-            strictly("[7.1.0, 7.2.0)")
+            strictly("[7.1.1, 7.2.0)")
         }
     }
 
-    // The native SDK's OkHttp adapter, on the same line: `trustPin()` installs
+    // The native SDK's OkHttp adapter, on the same range: `trustPin()` installs
     // the TLS pair and the attestation interceptor, which adds the headers of
     // an attestation provider (none until @trustpin/react-native-attest
     // registers one) and gives each redirect the headers for its own URL.
     implementation("cloud.trustpin:trustpin-okhttp") {
         version {
-            strictly("[7.1.0, 7.2.0)")
+            strictly("[7.1.1, 7.2.0)")
         }
     }
 

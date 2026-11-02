@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.1]
+
+### Changed
+
+- Documentation: the minimum attestation verifier is verifier 1.0.0 or later
+  (contract version 2). No behaviour change: an older verifier is still
+  refused.
+- Android: requires the native attestation module 7.1.1 or later, released together
+  with `@trustpin/react-native` 7.1.1.
+
 ## [7.1.0] - 2026-11-02
 
 ### Added

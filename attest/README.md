@@ -26,7 +26,7 @@ verifying tokens are covered at [docs.trustpin.cloud](https://docs.trustpin.clou
 | `@trustpin/react-native` | the same version, **7.1.x** |
 | iOS | 15.0+ |
 | Android | minSdk 25 (Android 7.1), **Kotlin 2.3.0** |
-| Verifier | contract version 2 or newer (verifier 0.2.2 or later) |
+| Verifier | contract version 2 or newer (verifier 1.0.0 or later) |
 
 ## Installation
 

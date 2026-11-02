@@ -89,7 +89,9 @@ for pod in TrustPinAttestKit TrustPinKit; do
   grep -q "s\.dependency \"${pod}\", \"~> ${PKG_MINOR}\.0\"" attest/TrustPinReactNativeAttest.podspec ||
     fail "attest podspec should depend on ${pod} '~> ${PKG_MINOR}.0'"
 done
-expected_range="strictly(\"[${PKG_MINOR}.0, ${PKG_MINOR%.*}.$(( ${PKG_MINOR#*.} + 1 )).0)\")"
+# The Android floor may sit on a patch above .0 (a native fix this package
+# requires); every range in both packages must still be that same one.
+expected_range="strictly(\"[${GRADLE_LOWER:-${PKG_MINOR}.0}, ${PKG_MINOR%.*}.$(( ${PKG_MINOR#*.} + 1 )).0)\")"
 for gradle in android/build.gradle attest/android/build.gradle; do
   while IFS= read -r range; do
     [ "$range" = "$expected_range" ] || fail "${gradle}: ${range}, expected ${expected_range}"
