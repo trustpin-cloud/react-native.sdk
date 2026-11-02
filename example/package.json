@@ -14,7 +14,8 @@
     "react-native": "0.85.3",
     "@react-native/new-app-screen": "0.85.3",
     "react-native-safe-area-context": "^5.5.2",
-    "@trustpin/react-native": "file:.."
+    "@trustpin/react-native": "file:..",
+    "@trustpin/react-native-attest": "file:../attest"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

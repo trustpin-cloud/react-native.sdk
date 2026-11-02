@@ -12,16 +12,16 @@
 /// Swift coordinator's per-task sink protocol.
 @interface TrustPinDelegateSink : NSObject <TrustPinRequestSink>
 - (instancetype)initWithDelegate:(id<RCTURLRequestDelegate>)delegate
-                           token:(NSURLSessionDataTask *)token;
+                           token:(TrustPinRequestToken *)token;
 @end
 
 @implementation TrustPinDelegateSink {
   id<RCTURLRequestDelegate> _delegate;
-  NSURLSessionDataTask *_token;
+  TrustPinRequestToken *_token;
 }
 
 - (instancetype)initWithDelegate:(id<RCTURLRequestDelegate>)delegate
-                           token:(NSURLSessionDataTask *)token
+                           token:(TrustPinRequestToken *)token
 {
   if (self = [super init]) {
     _delegate = delegate;
@@ -80,13 +80,13 @@ RCT_EXPORT_MODULE(TrustPinURLRequestHandler)
 - (id)sendRequest:(NSURLRequest *)request withDelegate:(id<RCTURLRequestDelegate>)delegate
 {
   // Two-phase: the sink owns the token before the task can produce callbacks.
-  NSURLSessionDataTask *task = [TrustPinSessionCoordinator.shared makeTask:request];
-  TrustPinDelegateSink *sink = [[TrustPinDelegateSink alloc] initWithDelegate:delegate token:task];
-  [TrustPinSessionCoordinator.shared start:task sink:sink];
-  return task;
+  TrustPinRequestToken *token = [TrustPinSessionCoordinator.shared makeToken];
+  TrustPinDelegateSink *sink = [[TrustPinDelegateSink alloc] initWithDelegate:delegate token:token];
+  [TrustPinSessionCoordinator.shared start:request token:token sink:sink];
+  return token;
 }
 
-- (void)cancelRequest:(NSURLSessionDataTask *)token
+- (void)cancelRequest:(TrustPinRequestToken *)token
 {
   [TrustPinSessionCoordinator.shared cancel:token];
 }

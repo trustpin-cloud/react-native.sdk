@@ -1,6 +1,6 @@
 {
   "name": "@trustpin/react-native",
-  "version": "6.4.0",
+  "version": "7.1.0",
   "description": "TrustPin SSL/TLS certificate pinning for React Native — in-handshake enforcement via the native TrustPin SDKs",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -25,8 +25,8 @@
     "!plugin/build/__tests__"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsc -p plugin/tsconfig.json",
-    "typecheck": "tsc --noEmit && tsc -p plugin/tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json && tsc -p plugin/tsconfig.json && tsc -p attest/tsconfig.build.json && tsc -p attest/plugin/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc -p plugin/tsconfig.json --noEmit && tsc -p attest/tsconfig.json --noEmit && tsc -p attest/plugin/tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "jest",
     "prepack": "npm run build",

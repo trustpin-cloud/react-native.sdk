@@ -1,7 +1,10 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["src/index.ts"],
-  "tsconfig": "tsconfig.build.json",
+  "entryPoints": [
+    "src/index.ts",
+    "attest/src/index.ts"
+  ],
+  "tsconfig": "tsconfig.docs.json",
   "out": "docs",
   "name": "@trustpin/react-native",
   "readme": "README.md",
@@ -25,6 +28,7 @@
   "navigationLinks": {
     "npm": "https://www.npmjs.com/package/@trustpin/react-native",
     "GitHub": "https://github.com/trustpin-cloud/react-native.sdk",
-    "TrustPin": "https://trustpin.cloud"
+    "TrustPin": "https://trustpin.cloud",
+    "npm (attest)": "https://www.npmjs.com/package/@trustpin/react-native-attest"
   }
 }

@@ -1,0 +1,121 @@
+def safeExtGet(prop, fallback) {
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+def requiredKotlinVersion = "2.3.0"
+
+static def versionAtLeast(String actual, String required) {
+    def parse = { it.split("[.-]").findAll { p -> p.isInteger() }.collect { p -> p.toInteger() } }
+    def a = parse(actual)
+    def r = parse(required)
+    for (int i = 0; i < r.size(); i++) {
+        def left = i < a.size() ? a[i] : 0
+        if (left != r[i]) return left > r[i]
+    }
+    return true
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+// The `cloud.trustpin:kotlin-attest` artifact is published with Kotlin 2.3.0
+// binary metadata, so the compiler must be new enough to read it. Without this
+// check the build fails with dozens of "incompatible version of Kotlin" errors
+// that say nothing about how to fix them.
+//
+// This asks the applied Kotlin plugin for its own version rather than reading
+// ext.kotlinVersion, which is unreliable in both directions: React Native's
+// included Gradle build pins the plugin regardless of ext, and Expo sets ext
+// from its own catalog even when the classpath carries a newer plugin.
+def resolvedKotlinVersion
+try {
+    resolvedKotlinVersion =
+        org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapperKt.getKotlinPluginVersion(project)
+} catch (Throwable ignored) {
+    resolvedKotlinVersion = safeExtGet("kotlinVersion", requiredKotlinVersion).toString()
+}
+
+if (!versionAtLeast(resolvedKotlinVersion.toString(), requiredKotlinVersion)) {
+    throw new GradleException(
+        "@trustpin/react-native-attest requires Kotlin ${requiredKotlinVersion} or newer, " +
+        "but this app builds with ${resolvedKotlinVersion}. The TrustPin Kotlin SDK is " +
+        "compiled with Kotlin ${requiredKotlinVersion} metadata. Pin the Kotlin plugin " +
+        "in your android/build.gradle buildscript classpath:\n" +
+        "    classpath(\"org.jetbrains.kotlin:kotlin-gradle-plugin:${requiredKotlinVersion}\")\n" +
+        "(The Expo config plugin does this for you.)"
+    )
+}
+// Generates the TurboModule spec from package.json codegenConfig. This library
+// is New Architecture only, so the plugin is always applied.
+apply plugin: "com.facebook.react"
+
+android {
+    namespace = "cloud.trustpin.reactnative.attest"
+
+    compileSdk = safeExtGet("compileSdkVersion", 36)
+
+    defaultConfig {
+        // 25 is the floor imposed by cloud.trustpin:kotlin-attest. Apps consuming
+        // this module must declare minSdk >= 25; the Expo config plugin raises
+        // it automatically with a warning.
+        minSdk = 25
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlin {
+        compilerOptions {
+            jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+        }
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+        test.java.srcDirs += "src/test/kotlin"
+    }
+
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+        }
+        unitTests.returnDefaultValues = true
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    // Version supplied by the consuming app's React Native Gradle plugin.
+    implementation "com.facebook.react:react-android"
+
+    // Pin the native modules to the 7.1.x patch line, the same line as
+    // @trustpin/react-native: the attestation module registers itself on the
+    // pinning SDK's default instance, so both must resolve one kotlin-sdk.
+    // `strictly` prevents Gradle's conflict resolution from silently selecting
+    // a newer minor or major pulled in transitively by the consuming app.
+    //
+    // `api`: TrustPinReactNativeAttest.start's public overload takes a
+    // `TrustPinAttestLogLevel`, so consumers see that type.
+    api("cloud.trustpin:kotlin-attest") {
+        version {
+            strictly("[7.1.0, 7.2.0)")
+        }
+    }
+    implementation("cloud.trustpin:kotlin-sdk") {
+        version {
+            strictly("[7.1.0, 7.2.0)")
+        }
+    }
+
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0"
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}

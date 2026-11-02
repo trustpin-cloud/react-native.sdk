@@ -59,5 +59,8 @@ plugin's work yourself:
 
 That asserts the generated plist is registered in the Xcode target, the
 generated `trustpin.json` exists, and the expected native startup/configuration
-hooks are present. See the [Expo setup section in the root README](../README.md#setup--expo)
+hooks are present, including those of `@trustpin/react-native-attest` when
+`TRUSTPIN_ATTEST_VERIFIER_URL` and `TRUSTPIN_ATTESTED_HOSTS` (comma-separated)
+are set at prebuild. Attestation on devices needs a policy that lists this
+app's identifiers. See the [Expo setup section in the root README](../README.md#setup--expo)
 for the full list of config-plugin props.

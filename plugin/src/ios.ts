@@ -68,7 +68,8 @@ export function addStartCall(contents: string, logLevel?: string): string {
     ? `TrustPinReactNative.start(logLevel: .${logLevel})`
     : 'TrustPinReactNative.start()';
 
-  const withImport = contents.includes('import TrustPinReactNative')
+  // A whole-line match: `import TrustPinReactNativeAttest` must not count.
+  const withImport = /^import TrustPinReactNative$/m.test(contents)
     ? contents
     : contents.replace(/(^import [^\n]+\n)(?![\s\S]*^import )/m, `$1import TrustPinReactNative\n`);
 

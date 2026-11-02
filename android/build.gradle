@@ -94,7 +94,7 @@ dependencies {
     // Version supplied by the consuming app's React Native Gradle plugin.
     implementation "com.facebook.react:react-android"
 
-    // Pin the native SDK to the 6.4.x patch line. `strictly` prevents Gradle's
+    // Pin the native SDK to the 7.1.x patch line. `strictly` prevents Gradle's
     // conflict resolution from silently selecting a newer minor or major
     // pulled in transitively by the consuming app.
     //
@@ -105,7 +105,17 @@ dependencies {
     // the example passes the typed `.debug`.
     api("cloud.trustpin:kotlin-sdk") {
         version {
-            strictly("[6.4.0, 6.5.0)")
+            strictly("[7.1.0, 7.2.0)")
+        }
+    }
+
+    // The native SDK's OkHttp adapter, on the same line: `trustPin()` installs
+    // the TLS pair and the attestation interceptor, which adds the headers of
+    // an attestation provider (none until @trustpin/react-native-attest
+    // registers one) and gives each redirect the headers for its own URL.
+    implementation("cloud.trustpin:trustpin-okhttp") {
+        version {
+            strictly("[7.1.0, 7.2.0)")
         }
     }
 
@@ -113,9 +123,8 @@ dependencies {
 
     // React Native provides OkHttp at runtime through react-android; declaring
     // it compileOnly keeps this module from ever forcing an OkHttp upgrade on
-    // the host app. The optional cloud.trustpin:trustpin-okhttp adapter is not
-    // used: the TLS pair is applied directly to React Native's own client
-    // builder, which keeps the dependency surface to the SDK itself.
+    // the host app. trustpin-okhttp compiles against OkHttp as compileOnly
+    // too, so React Native's own OkHttp is the one at runtime.
     compileOnly "com.squareup.okhttp3:okhttp:4.9.2"
 
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.0] - 2026-11-02
+
+### Added
+
+- App attestation, with the new companion package
+  `@trustpin/react-native-attest`. Once it is set up, React Native's `fetch`,
+  `XMLHttpRequest` and axios requests to the attested hosts carry the
+  `TrustPin-Attestation` header, added natively; a header the request already
+  carries is kept, and a redirect carries only the header for its own URL.
+  Without `@trustpin/react-native-attest`, nothing changes.
+
+### Changed
+
+- Updated iOS native SDK to 7.1.0 and Android native SDK to 7.1.0. Native
+  dependencies now accept patch updates within 7.1.x only (CocoaPods `~>`,
+  Gradle `strictly("[7.1.0, 7.2.0)")`).
+- Android: React Native's OkHttp client is now configured through the native
+  SDK's OkHttp adapter (`cloud.trustpin:trustpin-okhttp` 7.1.x): the same
+  in-handshake pinning, plus the attestation interceptor.
+
+### Fixed
+
+- Expo config plugin: the iOS `import TrustPinReactNative` is no longer
+  skipped when another line already starts with that text.
+
 ## [6.4.0] - 2026-10-03
 
 ### Changed

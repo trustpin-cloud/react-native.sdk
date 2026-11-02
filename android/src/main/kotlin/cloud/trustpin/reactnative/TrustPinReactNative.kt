@@ -6,6 +6,7 @@ import cloud.trustpin.kotlin.sdk.TrustPinConfiguration
 import cloud.trustpin.kotlin.sdk.TrustPinError
 import cloud.trustpin.kotlin.sdk.TrustPinLogLevel
 import cloud.trustpin.kotlin.sdk.fromAssets
+import cloud.trustpin.kotlin.sdk.okhttp.trustPin
 import com.facebook.react.modules.network.OkHttpClientProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -92,7 +93,10 @@ object TrustPinReactNative {
     /**
      * Routes every React Native OkHttp client through TrustPin's matched
      * socket-factory / trust-manager pair, so pin validation runs inside the
-     * real TLS handshake.
+     * real TLS handshake. The native adapter's `trustPin()` also installs its
+     * attestation interceptor: requests to attested hosts carry the
+     * attestation provider's headers, and redirects only the headers for
+     * their own URL.
      *
      * A failure here is environmental (the platform's TLS stack cannot be
      * configured, or the SDK refuses to run on this device) and is rethrown
@@ -103,9 +107,8 @@ object TrustPinReactNative {
     private fun installOkHttpFactory(applicationContext: Context) {
         OkHttpClientProvider.setOkHttpClientFactory {
             try {
-                val tls = TrustPin.default.makeTlsPair()
                 OkHttpClientProvider.createClientBuilder(applicationContext)
-                    .sslSocketFactory(tls.sslSocketFactory, tls.trustManager)
+                    .trustPin(TrustPin.default)
                     .build()
             } catch (e: Exception) {
                 recordInitFailure("OkHttp client creation", e)

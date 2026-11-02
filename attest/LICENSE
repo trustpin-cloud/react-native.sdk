@@ -1,0 +1,59 @@
+TrustPin Binary License Agreement  
+Version 1.0 – July 2025  
+https://trustpin.cloud
+
+This license governs the use of the TrustPin SDKs, CLI tools, and associated binaries (collectively, the "Software") made available by TrustPin at trustpin.cloud and app.trustpin.cloud.
+
+By using the Software, you agree to the following terms:
+
+-----
+
+1. **Grant of Use**  
+   You are granted a non-exclusive, non-transferable, royalty-free license to use the Software in its compiled binary form, including in commercial and enterprise environments, subject to the terms of your active TrustPin plan (including free and paid tiers).
+1. **No Modification or Reverse Engineering**  
+   You may not modify, decompile, disassemble, reverse-engineer, or create derivative works based on the Software. The Software is provided solely for use as-is.
+1. **No Redistribution**  
+   You may not sell, redistribute, sublicense, or publicly publish the Software, in whole or in part, without prior written permission from TrustPin.
+1. **Use with TrustPin Platform Only**  
+   The Software must be used exclusively through the authorized TrustPin platform interfaces, which include:
+   (a) the official TrustPin SDKs,
+   (b) the official TrustPin CLI tools, and
+   (c) the TrustPin web applications at https://trustpin.cloud and https://app.trustpin.cloud.
+
+You may not access TrustPin APIs directly outside of these authorized interfaces, including but not limited to web scraping, reverse-engineering API endpoints, or creating custom clients that interact with TrustPin services, without explicit written authorization.
+
+1. **Trademark Notice**
+   "TrustPin" and the TrustPin logo are trademarks of Capa7 LLC. You may not use these trademarks without express written permission, except as necessary for the proper attribution described below.
+1. **Attribution (Required)**  
+   If you integrate the Software into your own applications, you must prominently display the following notice in your application's "About" screen, license page, or comparable documentation. The notice must be clearly visible, in a font size no smaller than 10pt (or visually equivalent):
+   
+   "Uses TrustPin™ technology – https://trustpin.cloud"
+1. **Source Code Restrictions**
+   This license does not grant access to, or any rights over, the source code of the Software. All rights, title, and interest in and to the Software, including all associated intellectual property, remain the sole property of Capa7 LLC. This license does not grant you any ownership of the Software or the TrustPin trademark.
+1. **Competitive Use Restrictions**  
+   You may not use the Software to build, develop, or offer any product or service that competes with TrustPin, or to bypass usage restrictions, rate limits, or other limitations defined in your TrustPin plan. This includes, but is not limited to, creating alternative interfaces, wrappers, or derivative services that replicate or replace TrustPin functionality.
+1. **Plan Termination**  
+   If your TrustPin plan is cancelled, suspended, or expired, your license to use the Software is automatically revoked. You must cease all use and remove the Software from your systems within 30 days of termination.
+1. **No Warranty**
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. Capa7 LLC DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+1. **Limitation of Liability**
+   IN NO EVENT SHALL Capa7 LLC BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATING TO THIS LICENSE OR THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+1. **Termination for Breach**  
+   Your rights under this license terminate automatically upon any material breach of its terms. Upon termination, you must cease all use and destroy all copies of the Software in your possession or control.
+1. **Governing Law and Jurisdiction**  
+   This license is governed by and construed in accordance with the laws of the Kingdom of Spain. Any disputes arising under or in connection with this license shall be subject to the exclusive jurisdiction of the courts of Madrid, Spain.
+1. **Entire Agreement**  
+   This license constitutes the entire agreement between you and the author regarding use of the Software and supersedes all prior communications, proposals, or agreements.
+1. **Survival**  
+   Sections 6 (Attribution), 10 (No Warranty), and 11 (Limitation of Liability) shall survive termination of this license.
+1. **Contact and Licensing Inquiries**  
+   For commercial redistribution, enterprise licensing, or custom agreements, contact:  
+   📧 contact@trustpin.cloud  
+   🔗 https://trustpin.cloud
+
+-----
+
+Copyright (c) 2025 Capa7 LLC
+TrustPin is a trademark of Capa7 LLC
+
+This license is effective as of the date you first use the Software and remains in effect until terminated in accordance with its terms.
