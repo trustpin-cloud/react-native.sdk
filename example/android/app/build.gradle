@@ -79,7 +79,8 @@ android {
 
     namespace "com.trustpinexample"
     defaultConfig {
-        applicationId "com.trustpinexample"
+        // The native samples' application id, which the sample policy lists.
+        applicationId "cloud.trustpin.android.sample"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -87,7 +88,10 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
+            // The machine's own debug key when it has one: the sample policy
+            // lists its signing-certificate digest, as for the native samples.
+            def localDebugKey = file("${System.getProperty('user.home')}/.android/debug.keystore")
+            storeFile localDebugKey.exists() ? localDebugKey : file('debug.keystore')
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'
@@ -96,8 +100,12 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
+            // A debug token for emulators, from -PtrustpinDebugToken=<token>;
+            // never in a file, never in release builds.
+            buildConfigField "String", "TRUSTPIN_DEBUG_TOKEN", "\"${project.findProperty('trustpinDebugToken') ?: ''}\""
         }
         release {
+            buildConfigField "String", "TRUSTPIN_DEBUG_TOKEN", "\"\""
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug

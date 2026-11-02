@@ -47,18 +47,22 @@ jobs:
 
       - name: Version not already published
         run: |
-          if npm view "@trustpin/react-native@${{ steps.v.outputs.tag }}" version >/dev/null 2>&1; then
-            echo "@trustpin/react-native@${{ steps.v.outputs.tag }} is already on npm"
-            exit 1
-          fi
+          for name in @trustpin/react-native @trustpin/react-native-attest; do
+            if npm view "${name}@${{ steps.v.outputs.tag }}" version >/dev/null 2>&1; then
+              echo "${name}@${{ steps.v.outputs.tag }} is already on npm"
+              exit 1
+            fi
+          done
 
       - name: License check
         run: |
-          test -f LICENSE || { echo "LICENSE is missing"; exit 1; }
-          grep -q 'TrustPin Binary License' LICENSE || {
-            echo "LICENSE is not the TrustPin Binary License"
-            exit 1
-          }
+          for license in LICENSE attest/LICENSE; do
+            test -f "$license" || { echo "$license is missing"; exit 1; }
+            grep -q 'TrustPin Binary License' "$license" || {
+              echo "$license is not the TrustPin Binary License"
+              exit 1
+            }
+          done
 
   ci:
     needs: gate
@@ -87,6 +91,11 @@ jobs:
       - run: npm ci
       - name: Stage publish (OIDC, no token)
         run: npm stage publish --provenance --access public
+      # The attestation package releases with the same version; its prepack
+      # builds with the repository root's devDependencies.
+      - name: Stage publish @trustpin/react-native-attest (OIDC, no token)
+        working-directory: attest
+        run: npm stage publish --provenance --access public
       - name: GitHub Release
         run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
         env:
@@ -94,5 +103,5 @@ jobs:
       - name: Approval required to go live
         run: |
           v="${GITHUB_REF_NAME#v}"
-          echo "::notice title=Staged, awaiting approval::@trustpin/react-native@${v} is staged, not yet public."
-          echo "::notice title=How to promote::A maintainer runs: npm stage list @trustpin/react-native → npm stage view <id> → npm stage approve <id> (prompts for 2FA). Or approve at npmjs.com → package → Staged Packages."
+          echo "::notice title=Staged, awaiting approval::@trustpin/react-native@${v} and @trustpin/react-native-attest@${v} are staged, not yet public."
+          echo "::notice title=How to promote::A maintainer runs, for each package: npm stage list <package> → npm stage view <id> → npm stage approve <id> (prompts for 2FA). Or approve at npmjs.com → package → Staged Packages."

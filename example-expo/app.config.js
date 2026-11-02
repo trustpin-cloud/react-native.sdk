@@ -30,6 +30,22 @@ const credentials = {
 
 const usingPlaceholders = credentials.organizationId.startsWith(PLACEHOLDER_PREFIX);
 
+// App attestation, from the environment as well. Without them the attestation
+// keys are left out and attestation stays unavailable at runtime:
+//
+//   TRUSTPIN_ATTEST_VERIFIER_URL=https://attest.example.com \
+//   TRUSTPIN_ATTESTED_HOSTS=api.example.com npx expo prebuild --clean
+const attestation = process.env.TRUSTPIN_ATTEST_VERIFIER_URL
+  ? {
+      verifierUrl: process.env.TRUSTPIN_ATTEST_VERIFIER_URL,
+      attestedHosts: (process.env.TRUSTPIN_ATTESTED_HOSTS ?? '')
+        .split(',')
+        .map(host => host.trim())
+        .filter(Boolean),
+      googleCloudProjectNumber: process.env.TRUSTPIN_GOOGLE_CLOUD_PROJECT_NUMBER || undefined,
+    }
+  : {};
+
 if (usingPlaceholders) {
   console.warn(
     '\n[TrustPin example] Building with PLACEHOLDER credentials.\n' +
@@ -60,11 +76,21 @@ module.exports = {
     },
     plugins: [
       'expo-dev-client',
+      // iOS 27 requires the UIScene life cycle; see the plugin.
+      './plugins/withSceneLifecycle',
       [
         '@trustpin/react-native',
         {
           ...credentials,
           mode: 'strict',
+          logLevel: 'debug',
+        },
+      ],
+      [
+        '@trustpin/react-native-attest',
+        {
+          ...attestation,
+          appAttestEnvironment: 'development',
           logLevel: 'debug',
         },
       ],

@@ -1,3 +1,9 @@
+/**
+ * TrustPin certificate pinning for React Native, enforced inside the TLS handshake by the native SDKs.
+ *
+ * @module @trustpin/react-native
+ */
+
 import NativeTrustPinReactNative from './NativeTrustPinReactNative';
 import type { Spec, ValidationEventPayload, LogEventPayload } from './NativeTrustPinReactNative';
 import { TrustPinError, TrustPinErrorCodes, NOT_INITIALIZED_MESSAGE } from './errors';

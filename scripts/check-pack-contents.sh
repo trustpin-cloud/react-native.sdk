@@ -3,13 +3,18 @@
 # shouldn't.
 #
 #   scripts/check-pack-contents.sh [pack.json]
+#   PACKAGE_DIR=attest scripts/check-pack-contents.sh [pack.json]
 #
-# With no argument it runs `npm pack --dry-run --json` itself. The `files`
+# PACKAGE_DIR selects the package: the repository root (@trustpin/react-native,
+# the default) or attest (@trustpin/react-native-attest). With no argument it
+# runs `npm pack --dry-run --json` itself. The `files`
 # allowlist in package.json already aims for this; the point here is that the
 # guarantee is asserted rather than assumed.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+PACKAGE_DIR="${PACKAGE_DIR:-.}"
+cd "$PACKAGE_DIR"
 
 PACK_JSON="${1:-}"
 if [ -z "$PACK_JSON" ]; then
@@ -59,29 +64,42 @@ echo
 
 # Required — a consumer cannot build without these.
 require "package.json"
-require "TrustPinReactNative.podspec"
 require "app.plugin.js"
 require "LICENSE"
 require "README.md"
 require "lib/index.js"
 require "lib/index.d.ts"
-# Codegen reads the spec source from the installed package at build time.
 require "src/index.ts"
-require "src/NativeTrustPinReactNative.ts"
 require "android/build.gradle"
 require "android/src/main/AndroidManifest.xml"
-require "android/src/main/kotlin/cloud/trustpin/reactnative/TrustPinReactNativeModule.kt"
-require "android/src/main/kotlin/cloud/trustpin/reactnative/TrustPinReactNative.kt"
-require "ios/TrustPinReactNative.swift"
-require "ios/TrustPinReactNativeModule.mm"
-require "ios/TrustPinURLRequestHandler.mm"
-require "ios/TrustPinSessionCoordinator.swift"
 require "plugin/build/index.js"
+if [ "$PACKAGE_DIR" = "attest" ]; then
+  require "TrustPinReactNativeAttest.podspec"
+  # Codegen reads the spec source from the installed package at build time.
+  require "src/NativeTrustPinReactNativeAttest.ts"
+  require "android/src/main/kotlin/cloud/trustpin/reactnative/attest/TrustPinReactNativeAttestModule.kt"
+  require "android/src/main/kotlin/cloud/trustpin/reactnative/attest/TrustPinReactNativeAttest.kt"
+  require "ios/TrustPinReactNativeAttest.swift"
+  require "ios/TrustPinReactNativeAttestModule.mm"
+  require "ios/TrustPinAttestBridge.swift"
+else
+  require "TrustPinReactNative.podspec"
+  # Codegen reads the spec source from the installed package at build time.
+  require "src/NativeTrustPinReactNative.ts"
+  require "android/src/main/kotlin/cloud/trustpin/reactnative/TrustPinReactNativeModule.kt"
+  require "android/src/main/kotlin/cloud/trustpin/reactnative/TrustPinReactNative.kt"
+  require "ios/TrustPinReactNative.swift"
+  require "ios/TrustPinReactNativeModule.mm"
+  require "ios/TrustPinURLRequestHandler.mm"
+  require "ios/TrustPinSessionCoordinator.swift"
+fi
 
 echo
 
 # Forbidden — build output, test scaffolding, and anything project-specific.
 forbid '^example' "example apps"
+# The attestation package is published on its own, from attest/.
+forbid '^attest/' "the attestation package"
 forbid '__tests__' "JavaScript tests"
 forbid '^android/src/test' "Kotlin tests"
 # plugin/build is the compiled config plugin and belongs in the tarball; the

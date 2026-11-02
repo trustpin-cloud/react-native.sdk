@@ -26,6 +26,7 @@ holds no lever that disables or reconfigures pinning.
 - [Using the SDK](#using-the-sdk)
 - [API reference](#api-reference)
 - [Error handling](#error-handling)
+- [App attestation](#app-attestation)
 - [Coverage and boundaries](#coverage-and-boundaries)
 - [Example apps](#example-apps)
 - [License](#license)
@@ -365,13 +366,28 @@ Common codes: `PINS_MISMATCH`, `ALL_PINS_EXPIRED`, `DOMAIN_NOT_REGISTERED`,
 Android additionally surfaces `UNSUPPORTED_DEVICE`, `SETUP_IN_PROGRESS`,
 `LOCK_TIMEOUT`, and `SSL_CONTEXT_SETUP_FAILED`.
 
+## App attestation
+
+App attestation proves to your API that a request comes from your genuine app
+on a genuine device. It is a separate package,
+[`@trustpin/react-native-attest`](attest/README.md), so apps that only pin
+don't take on the attestation libraries. Set it up natively right after
+pinning; from then on `fetch`, `XMLHttpRequest` and axios requests to your
+attested hosts carry the `TrustPin-Attestation` header, with nothing else to
+change. A redirect carries only the header for its own URL.
+
 ## Example apps
 
 Two runnable samples live in this repository:
 
 - [`example/`](example) — bare React Native.
 - [`example-expo/`](example-expo) — Expo dev-client, which doubles as the config
-  plugin's living test.
+  plugins' living test.
+
+Both have two tabs, as the native and Flutter samples do: **Pinning** and
+**Attestation**, each with its own log. The Attestation tab makes a protected
+call with a token bound to the `Authorization` header and a sensitive call with
+an assertion, signs out and resets, and logs the attestation state and events.
 
 ## License
 

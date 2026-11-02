@@ -1,18 +1,25 @@
 /**
  * TrustPin React Native SDK — Expo dev-client example.
  *
- * A single-screen sample whose look and feel mirrors the Flutter SDK's
- * `sample_app`: a teal-green themed, card-based layout with a configuration
- * card, a connection-testing card, and a scrolling log feed.
+ * A two-tab sample whose look and feel mirrors the Flutter SDK's `sample_app`
+ * and the native samples: a Pinning tab and an Attestation tab, each with its
+ * own log.
  *
  * Everything native here was wired by the config plugin at prebuild time: the
  * credential files, both init calls, and the Android toolchain pins. This app
  * only observes — it cannot configure, weaken, or disable pinning. The
  * configuration card therefore drives the fail-closed readiness gate
  * (`awaitConfiguration`) instead of entering credentials.
+ *
+ * The Attestation tab uses @trustpin/react-native-attest, wired by its
+ * config plugin next to pinning: a protected call through plain `fetch` (the
+ * header is added natively), a sensitive call with an assertion over the
+ * request body, sign-out and reset, with the module's state, events and logs
+ * in the tab's own log.
  */
 
 import Constants from 'expo-constants';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -32,6 +39,13 @@ import TrustPin, {
   type TrustPinLogEvent,
   type TrustPinValidationEvent,
 } from '@trustpin/react-native';
+import TrustPinAttest, {
+  type TrustPinAttestEvent,
+  type TrustPinAttestLogEvent,
+  type TrustPinAttestState,
+} from '@trustpin/react-native-attest';
+
+import { asciiBytes, sha256 } from './sha256';
 
 // ---------------------------------------------------------------------------
 // Theme — the TrustPin green palette, matching the Flutter sample.
@@ -92,6 +106,36 @@ function timestamp(): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+function describeState(state: TrustPinAttestState): string {
+  switch (state.status) {
+    case 'unavailable':
+      return 'No token yet';
+    case 'attesting':
+      return 'Attesting…';
+    case 'ready':
+      return `Token ready until ${new Date(state.expiresAtMs).toLocaleTimeString()}`;
+    case 'failed':
+      return `Failed: ${state.error.code}${
+        state.error.reasons.length ? ` [${state.error.reasons.join(', ')}]` : ''
+      }, next attempt ${state.retryAtMs ? `after ${new Date(state.retryAtMs).toLocaleTimeString()}` : 'after restart'}`;
+  }
+}
+
+/** `"<platform>/<env> <result>[, bound]"` from the sample API's echo of the verified token. */
+function describeVerdict(body: string): string | null {
+  try {
+    const json = JSON.parse(body);
+    if (json?.attestation) {
+      const a = json.attestation;
+      return `${a.platform}/${a.env} ${a.result}${a.bound ? ', bound' : ''}${a.assertion ? `, assertion ${a.assertion}` : ''}`;
+    }
+    const reason = json?.reason ?? json?.error;
+    return reason ? `rejected: ${reason}` : null;
+  } catch {
+    return null;
+  }
+}
+
 function describeError(error: unknown): string {
   if (error instanceof TrustPinError) {
     return `${error.code}: ${error.message}`;
@@ -105,21 +149,35 @@ function describeError(error: unknown): string {
 // ---------------------------------------------------------------------------
 
 export default function App(): React.JSX.Element {
-  const [lines, setLines] = useState<LogLine[]>([]);
+  return (
+    <SafeAreaProvider>
+      <MainScreen />
+    </SafeAreaProvider>
+  );
+}
+
+function MainScreen(): React.JSX.Element {
+  // Safe-area insets rather than the status bar height, which reads 0 under
+  // the UIScene life cycle.
+  const insets = useSafeAreaInsets();
+  const [tab, setTab] = useState<Tab>('pinning');
+  const pinningLog = useLogFeed();
+  const attestationLog = useLogFeed();
+  const appendLog = pinningLog.append;
+  const appendAttest = attestationLog.append;
   const [testUrl, setTestUrl] = useState(DEFAULT_TEST_URL);
   const [configured, setConfigured] = useState(false);
   const [working, setWorking] = useState(false);
   const [status, setStatus] = useState<Status>('notConfigured');
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
 
-  const logScroll = useRef<ScrollView>(null);
-  const started = useRef(false);
+  const [apiUrl, setApiUrl] = useState('');
+  const [apiUser, setApiUser] = useState('');
+  const [apiPassword, setApiPassword] = useState('');
+  const [attestState, setAttestState] = useState<TrustPinAttestState>({ status: 'unavailable' });
+  const session = useRef<string | null>(null);
 
-  const appendLog = useCallback((level: LogLevel, message: string) => {
-    setLines(current =>
-      [...current, { id: nextLineId++, timestamp: timestamp(), level, message }].slice(-200),
-    );
-  }, []);
+  const started = useRef(false);
 
   const showToast = useCallback((text: string) => {
     setToast({ id: nextToastId++, text });
@@ -164,6 +222,33 @@ export default function App(): React.JSX.Element {
       logs.remove();
     };
   }, [appendLog]);
+
+  // Attestation was set up natively at launch, next to pinning. Tokens are
+  // bound to each request's Authorization header, and a token is fetched ahead
+  // of the first call.
+  useEffect(() => {
+    TrustPinAttest.setLogLevel('debug').catch(() => {});
+    appendAttest('info', 'TrustPinAttest started natively with the app, from the same configuration file');
+    TrustPinAttest.bindToHeader('Authorization').catch(() => {});
+    TrustPinAttest.prefetch();
+    const attestStates = TrustPinAttest.onStateChange((state: TrustPinAttestState) => {
+      setAttestState(state);
+      appendAttest('info', `Attestation state: ${describeState(state)}`);
+    });
+    const attestEvents = TrustPinAttest.onEvent((event: TrustPinAttestEvent) => {
+      appendAttest('info', `[Event] ${JSON.stringify(event)}`);
+    });
+    const attestLogs = TrustPinAttest.onLogEvent((event: TrustPinAttestLogEvent) => {
+      const level = event.level === 'warning' ? 'warning' : event.level === 'error' ? 'error' : 'debug';
+      appendAttest(level, `[TrustPinAttest] ${event.message}`);
+    });
+
+    return () => {
+      attestStates.remove();
+      attestEvents.remove();
+      attestLogs.remove();
+    };
+  }, [appendAttest]);
 
   // -------------------------------------------------------------------------
   // Actions
@@ -233,15 +318,102 @@ export default function App(): React.JSX.Element {
     }
   }, [testUrl, configured, appendLog, showToast]);
 
-  const clearLog = useCallback(() => setLines([]), []);
+  // Signs in to the sample API once (POST /login) and keeps the session.
+  const signIn = useCallback(async (): Promise<string> => {
+    if (session.current) return session.current;
+    const response = await fetch(`${apiUrl.trim().replace(/\/+$/, '')}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: apiUser, password: apiPassword }),
+    });
+    if (response.status !== 200) throw new Error(`Sign-in failed: HTTP ${response.status}`);
+    const token = (await response.json())?.token;
+    if (typeof token !== 'string' || !token) throw new Error('Sign-in answered without a token');
+    session.current = token;
+    return token;
+  }, [apiUrl, apiUser, apiPassword]);
+
+  const report = useCallback(
+    async (label: string, response: Response) => {
+      if (response.status === 401) session.current = null;
+      const body = await response.text();
+      const verdict = describeVerdict(body);
+      appendAttest(response.ok ? 'success' : 'warning', `${label} answered HTTP ${response.status}`);
+      if (verdict) appendAttest('info', `   API attestation: ${verdict}`);
+      showToast(`${label}: HTTP ${response.status}`);
+    },
+    [appendAttest, showToast],
+  );
+
+  const callProtected = useCallback(async () => {
+    setWorking(true);
+    appendAttest('info', 'Calling the protected sample endpoint (GET /home)…');
+    try {
+      const token = await signIn();
+      // Plain fetch: the TrustPin-Attestation header is added natively, bound
+      // to this Authorization value.
+      const response = await fetch(`${apiUrl.trim().replace(/\/+$/, '')}/home`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await report('Protected call', response);
+    } catch (error) {
+      appendAttest('error', `Protected call failed: ${describeError(error)}`);
+    } finally {
+      setWorking(false);
+    }
+  }, [apiUrl, signIn, report, appendAttest]);
+
+  const callSensitive = useCallback(async () => {
+    setWorking(true);
+    appendAttest('info', 'Sensitive call: token + assertion over the body (POST /transfer)…');
+    try {
+      const token = await signIn();
+      const url = `${apiUrl.trim().replace(/\/+$/, '')}/transfer`;
+      const body = JSON.stringify({ amount: '1.00', to: 'demo' });
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+      // The token first, so the header binding sees this request's session
+      // value; then both headers for the operation, with an assertion over the
+      // body's SHA-256, which the sample API checks with the verifier.
+      Object.assign(headers, await TrustPinAttest.attestationHeaders(url, { method: 'POST', headers }));
+      Object.assign(headers, await TrustPinAttest.assertionHeaders(sha256(asciiBytes(body))));
+      const response = await fetch(url, { method: 'POST', headers, body });
+      await report('Sensitive call', response);
+    } catch (error) {
+      appendAttest('error', `Sensitive call failed: ${describeError(error)}`);
+    } finally {
+      setWorking(false);
+    }
+  }, [apiUrl, signIn, report, appendAttest]);
+
+  const signOut = useCallback(() => {
+    session.current = null;
+    appendAttest(
+      'info',
+      'Session discarded: the next call signs in again; the new session value re-binds the token (a renewal, not a new key)',
+    );
+  }, [appendAttest]);
+
+  const resetAttestation = useCallback(async () => {
+    try {
+      await TrustPinAttest.reset();
+      appendAttest('info', 'Attestation reset: the next call attests a new key');
+    } catch (error) {
+      appendAttest('error', `Attestation reset failed: ${describeError(error)}`);
+    }
+  }, [appendAttest]);
+
 
   const canVerify = !configured && !working;
   const canTest = configured && !working;
+  const canAttest = configured && !working && apiUrl.trim().startsWith('https://');
 
   return (
     <View style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-      <View style={[styles.header, { paddingTop: Constants.statusBarHeight + 12 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.headerTitle}>TrustPin Sample</Text>
       </View>
 
@@ -256,6 +428,8 @@ export default function App(): React.JSX.Element {
           </View>
         ) : null}
 
+        {tab === 'pinning' ? (
+          <>
         {/* Configuration card ------------------------------------------------ */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>TrustPin Configuration</Text>
@@ -303,38 +477,83 @@ export default function App(): React.JSX.Element {
           <StatusBanner status={status} />
         </View>
 
-        {/* Log card ---------------------------------------------------------- */}
+            <LogPanel
+              title="Pinning Log"
+              lines={pinningLog.lines}
+              onClear={pinningLog.clear}
+              emptyText={'Verify configuration and test connections…'}
+            />
+          </>
+        ) : (
+          <>
+        {/* Attestation card -------------------------------------------------- */}
         <View style={styles.card}>
-          <View style={styles.logHeader}>
-            <Text style={styles.cardTitle}>Log Output</Text>
-            <TouchableOpacity onPress={clearLog} hitSlop={8}>
-              <Text style={styles.clearButton}>Clear</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.cardTitle}>App Attestation</Text>
+          <Text style={styles.note}>{describeState(attestState)}</Text>
 
-          <View style={styles.logBox}>
-            {lines.length === 0 ? (
-              <View style={styles.logEmpty}>
-                <Text style={styles.logEmptyText}>
-                  Welcome to TrustPin React Native Sample{'\n'}
-                  Verify configuration and test connections…
-                </Text>
-              </View>
-            ) : (
-              <ScrollView
-                ref={logScroll}
-                onContentSizeChange={() => logScroll.current?.scrollToEnd({ animated: true })}>
-                {lines.map(line => (
-                  <Text key={line.id} style={styles.logLine}>
-                    [{line.timestamp}] {LOG_ICON[line.level]} {line.message}
-                  </Text>
-                ))}
-              </ScrollView>
-            )}
-          </View>
+          <LabeledField
+            label="Sample API URL"
+            value={apiUrl}
+            onChangeText={setApiUrl}
+            placeholder="https://api.example.com"
+            editable={!working}
+          />
+          <View style={styles.fieldGap} />
+          <LabeledField
+            label="Username"
+            value={apiUser}
+            onChangeText={setApiUser}
+            placeholder="demo"
+            editable={!working}
+          />
+          <View style={styles.fieldGap} />
+          <LabeledField
+            label="Password"
+            value={apiPassword}
+            onChangeText={setApiPassword}
+            placeholder="password"
+            editable={!working}
+            secure
+          />
+          <View style={styles.fieldGap} />
+
+          <PrimaryButton
+            title="Call Protected Endpoint"
+            color={colors.primary}
+            disabled={!canAttest}
+            working={false}
+            onPress={callProtected}
+          />
+          <View style={styles.buttonGap} />
+          <PrimaryButton
+            title="Sensitive Call (Token + Assertion)"
+            color={colors.primary}
+            disabled={!canAttest}
+            working={false}
+            onPress={callSensitive}
+          />
+          <View style={styles.buttonGap} />
+          <OutlinedButton title="Sign Out (New Session)" disabled={!canAttest} onPress={signOut} />
+          <View style={styles.buttonGap} />
+          <OutlinedButton title="Reset Attestation" disabled={working} onPress={resetAttestation} />
+
+          <Text style={styles.note}>
+            Requires the App Attest entitlement (iOS) and a policy that lists this app. Verify the
+            pinning configuration first: verifier calls are pinned.
+          </Text>
         </View>
+
+            <LogPanel
+              title="Attestation Log"
+              lines={attestationLog.lines}
+              onClear={attestationLog.clear}
+              emptyText={'Attestation state, events and protected calls appear here…'}
+            />
+          </>
+        )}
       </ScrollView>
 
+      <TabBar tab={tab} onSelect={setTab} bottomInset={insets.bottom} />
       <Toast toast={toast} onHide={hideToast} />
     </View>
   );
@@ -343,6 +562,81 @@ export default function App(): React.JSX.Element {
 // ---------------------------------------------------------------------------
 // Components
 // ---------------------------------------------------------------------------
+
+type Tab = 'pinning' | 'attestation';
+
+/** One log feed: its lines, an append and a clear. */
+function useLogFeed() {
+  const [lines, setLines] = useState<LogLine[]>([]);
+  const append = useCallback((level: LogLevel, message: string) => {
+    setLines(current =>
+      [...current, { id: nextLineId++, timestamp: timestamp(), level, message }].slice(-200),
+    );
+  }, []);
+  const clear = useCallback(() => setLines([]), []);
+  return { lines, append, clear };
+}
+
+function LogPanel(props: {
+  title: string;
+  lines: LogLine[];
+  onClear: () => void;
+  emptyText: string;
+}): React.JSX.Element {
+  const scroll = useRef<ScrollView>(null);
+  return (
+    <View style={styles.card}>
+      <View style={styles.logHeader}>
+        <Text style={styles.cardTitle}>{props.title}</Text>
+        <TouchableOpacity onPress={props.onClear} hitSlop={8}>
+          <Text style={styles.clearButton}>Clear</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.logBox}>
+        {props.lines.length === 0 ? (
+          <View style={styles.logEmpty}>
+            <Text style={styles.logEmptyText}>{props.emptyText}</Text>
+          </View>
+        ) : (
+          <ScrollView
+            ref={scroll}
+            onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
+            {props.lines.map(line => (
+              <Text key={line.id} style={styles.logLine}>
+                [{line.timestamp}] {LOG_ICON[line.level]} {line.message}
+              </Text>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    </View>
+  );
+}
+
+/** Pinning and Attestation, as in the native and Flutter samples. */
+function TabBar(props: {
+  tab: Tab;
+  onSelect: (tab: Tab) => void;
+  bottomInset: number;
+}): React.JSX.Element {
+  const item = (tab: Tab, icon: string, label: string) => (
+    <TouchableOpacity
+      key={tab}
+      style={styles.tabItem}
+      onPress={() => props.onSelect(tab)}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: props.tab === tab }}>
+      <Text style={[styles.tabIcon, props.tab === tab && styles.tabSelected]}>{icon}</Text>
+      <Text style={[styles.tabLabel, props.tab === tab && styles.tabSelected]}>{label}</Text>
+    </TouchableOpacity>
+  );
+  return (
+    <View style={[styles.tabBar, { paddingBottom: props.bottomInset + 6 }]}>
+      {item('pinning', '🛡', 'Pinning')}
+      {item('attestation', '✅', 'Attestation')}
+    </View>
+  );
+}
 
 function DashboardBanner(): React.JSX.Element {
   return (
@@ -365,6 +659,7 @@ function LabeledField(props: {
   onChangeText: (text: string) => void;
   placeholder: string;
   editable: boolean;
+  secure?: boolean;
 }): React.JSX.Element {
   return (
     <View>
@@ -372,6 +667,7 @@ function LabeledField(props: {
       <TextInput
         style={[styles.input, !props.editable && styles.inputDisabled]}
         value={props.value}
+        secureTextEntry={props.secure}
         onChangeText={props.onChangeText}
         placeholder={props.placeholder}
         placeholderTextColor={colors.muted}
@@ -480,6 +776,17 @@ function Toast({
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
+  tabBar: {
+    flexDirection: 'row',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#C8D3CF',
+    backgroundColor: '#FFFFFF',
+    paddingTop: 6,
+  },
+  tabItem: { flex: 1, alignItems: 'center', paddingVertical: 4 },
+  tabIcon: { fontSize: 20, opacity: 0.5 },
+  tabLabel: { fontSize: 12, color: colors.muted, marginTop: 2 },
+  tabSelected: { opacity: 1, color: colors.primary, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: colors.screenBg },
   header: {
     backgroundColor: colors.primary,

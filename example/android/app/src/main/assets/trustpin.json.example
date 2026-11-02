@@ -3,5 +3,8 @@
   "organization_id": "YOUR_ORGANIZATION_ID",
   "project_id": "YOUR_PROJECT_ID",
   "public_key": "YOUR_BASE64_EC_PUBLIC_KEY",
-  "mode": "strict"
+  "mode": "strict",
+  "attest_verifier_url": "https://YOUR_VERIFIER_HOST",
+  "attested_hosts": ["YOUR_API_HOST"],
+  "google_cloud_project_number": ""
 }

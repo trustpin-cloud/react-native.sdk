@@ -20,5 +20,13 @@
 	<!-- Optional. "strict" (default, production) or "permissive". -->
 	<key>Mode</key>
 	<string>strict</string>
+	<!-- App attestation (@trustpin/react-native-attest): your verifier, and the
+	     hosts that receive the TrustPin-Attestation header. -->
+	<key>AttestVerifierURL</key>
+	<string>https://YOUR_VERIFIER_HOST</string>
+	<key>AttestedHosts</key>
+	<array>
+		<string>YOUR_API_HOST</string>
+	</array>
 </dict>
 </plist>

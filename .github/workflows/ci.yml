@@ -40,6 +40,9 @@ jobs:
       - name: Package contents
         if: matrix.node == '24'
         run: ./scripts/check-pack-contents.sh
+      - name: Package contents (attest)
+        if: matrix.node == '24'
+        run: PACKAGE_DIR=attest ./scripts/check-pack-contents.sh
 
   kotlin:
     runs-on: ubuntu-latest
@@ -63,13 +66,15 @@ jobs:
         working-directory: example
       - name: Kotlin unit tests
         working-directory: example/android
-        # React Native rewrites @trustpin/react-native to this project name.
-        run: ./gradlew :trustpin_react-native:testDebugUnitTest
+        # React Native rewrites @trustpin/react-native(-attest) to these project names.
+        run: ./gradlew :trustpin_react-native:testDebugUnitTest :trustpin_react-native-attest:testDebugUnitTest
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: kotlin-test-reports
-          path: android/build/reports/tests/**
+          path: |
+            android/build/reports/tests/**
+            attest/android/build/reports/tests/**
 
   swift:
     # macOS is required for Xcode + the iOS Simulator.

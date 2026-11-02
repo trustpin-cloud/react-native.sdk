@@ -2,7 +2,7 @@
 # Asserts that every place carrying a version or floor agrees.
 #
 # Three independent locksteps, each of which can ship a broken SDK silently:
-#   1. The native SDK line (plugin 6.4.x <-> native 6.4.x)
+#   1. The native SDK line (plugin 7.1.x <-> native 7.1.x)
 #   2. The Kotlin toolchain floor, required by the native SDK's metadata
 #   3. The Android minSdk floor
 #
@@ -32,7 +32,7 @@ extract() {
 
 PKG_VERSION=$(node -p "require('./package.json').version")
 PKG_LINE=${PKG_VERSION%%-*}                      # drop any -dev suffix
-PKG_MINOR=${PKG_LINE%.*}                         # 6.4.0 -> 6.4
+PKG_MINOR=${PKG_LINE%.*}                         # 7.1.0 -> 7.1
 
 POD_DEP=$(extract TrustPinReactNative.podspec 's/.*s\.dependency "TrustPinKit", "~> ([0-9]+\.[0-9]+\.[0-9]+)".*/\1/p')
 GRADLE_LOWER=$(extract android/build.gradle 's/.*strictly\("\[([0-9]+\.[0-9]+\.[0-9]+), *([0-9]+\.[0-9]+\.[0-9]+)\)"\).*/\1/p')
@@ -72,6 +72,29 @@ fi
 # The package version must live in exactly one file.
 grep -q 's\.version *= *package\["version"\]' TrustPinReactNative.podspec ||
   fail "podspec no longer derives s.version from package.json"
+
+# Every native dependency of both packages sits on the same line: the
+# attestation module registers itself on the pinning SDK's default instance,
+# so the two packages must resolve one native SDK.
+ATTEST_VERSION=$(node -p "require('./attest/package.json').version")
+ATTEST_PEER=$(node -p "require('./attest/package.json').peerDependencies['@trustpin/react-native']")
+echo "  attest package.json   ${ATTEST_VERSION} (peer @trustpin/react-native ${ATTEST_PEER})"
+[ "$ATTEST_VERSION" = "$PKG_VERSION" ] ||
+  fail "attest/package.json is ${ATTEST_VERSION}, package.json is ${PKG_VERSION}: both packages release together"
+[ "$ATTEST_PEER" = "~${PKG_MINOR}.0" ] ||
+  fail "attest peer dependency on @trustpin/react-native is ${ATTEST_PEER}, expected ~${PKG_MINOR}.0"
+grep -q 's\.version *= *package\["version"\]' attest/TrustPinReactNativeAttest.podspec ||
+  fail "attest podspec no longer derives s.version from attest/package.json"
+for pod in TrustPinAttestKit TrustPinKit; do
+  grep -q "s\.dependency \"${pod}\", \"~> ${PKG_MINOR}\.0\"" attest/TrustPinReactNativeAttest.podspec ||
+    fail "attest podspec should depend on ${pod} '~> ${PKG_MINOR}.0'"
+done
+expected_range="strictly(\"[${PKG_MINOR}.0, ${PKG_MINOR%.*}.$(( ${PKG_MINOR#*.} + 1 )).0)\")"
+for gradle in android/build.gradle attest/android/build.gradle; do
+  while IFS= read -r range; do
+    [ "$range" = "$expected_range" ] || fail "${gradle}: ${range}, expected ${expected_range}"
+  done < <(grep -oE 'strictly\("[^"]+"\)' "$gradle")
+done
 
 [ "$failures" -eq 0 ] && pass "native SDK line agrees everywhere"
 

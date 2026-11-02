@@ -2,6 +2,7 @@
 node_modules/
 lib/
 plugin/build/
+attest/plugin/build/
 coverage/
 *.log
 *.tsbuildinfo
@@ -19,9 +20,13 @@ yarn.lock
 android/build/
 android/.gradle/
 android/local.properties
+attest/android/build/
+attest/android/.gradle/
+attest/android/local.properties
 
 # iOS / CocoaPods (example apps get their own Pods entries)
 ios/build/
+attest/ios/build/
 # XCTest result bundles from scripts/test-ios.sh and the CI swift job.
 *.xcresult
 

@@ -7,7 +7,9 @@ import com.facebook.react.ReactHost
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import cloud.trustpin.kotlin.sdk.TrustPinLogLevel
+import cloud.trustpin.kotlin.attest.TrustPinAttestLogLevel
 import cloud.trustpin.reactnative.TrustPinReactNative
+import cloud.trustpin.reactnative.attest.TrustPinReactNativeAttest
 
 class MainApplication : Application(), ReactApplication {
 
@@ -28,6 +30,9 @@ class MainApplication : Application(), ReactApplication {
     // the bundled assets/trustpin.json.
     // Debug logging so the example surfaces pinning activity in Logcat.
     TrustPinReactNative.start(this, TrustPinLogLevel.DEBUG)
+    // App attestation, set up from the same trustpin.json. The debug token is
+    // a debug-build field: ./gradlew -PtrustpinDebugToken=<token>.
+    TrustPinReactNativeAttest.start(this, TrustPinAttestLogLevel.DEBUG, BuildConfig.TRUSTPIN_DEBUG_TOKEN)
 
     super.onCreate()
     loadReactNative(this)

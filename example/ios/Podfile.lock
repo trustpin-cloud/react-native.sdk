@@ -1856,8 +1856,10 @@ PODS:
     - React-utils (= 0.85.3)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.85.3)
-  - TrustPinKit (6.4.0)
-  - TrustPinReactNative (6.4.0):
+  - TrustPinAttestKit (7.1.0):
+    - TrustPinKit (= 7.1.0)
+  - TrustPinKit (7.1.0)
+  - TrustPinReactNative (7.1.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1878,7 +1880,31 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - TrustPinKit (~> 6.4.0)
+    - TrustPinKit (~> 7.1.0)
+    - Yoga
+  - TrustPinReactNativeAttest (7.1.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - TrustPinAttestKit (~> 7.1.0)
+    - TrustPinKit (~> 7.1.0)
     - Yoga
   - Yoga (0.0.0)
 
@@ -1959,10 +1985,12 @@ DEPENDENCIES:
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
   - "TrustPinReactNative (from `../node_modules/@trustpin/react-native`)"
+  - "TrustPinReactNativeAttest (from `../node_modules/@trustpin/react-native-attest`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
   trunk:
+    - TrustPinAttestKit
     - TrustPinKit
 
 EXTERNAL SOURCES:
@@ -2117,12 +2145,14 @@ EXTERNAL SOURCES:
     :podspec: "../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
   TrustPinReactNative:
     :path: "../node_modules/@trustpin/react-native"
+  TrustPinReactNativeAttest:
+    :path: "../node_modules/@trustpin/react-native-attest"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
   FBLazyVector: 24e62c765683b8d89006a88a2c8f5cf019f0074d
-  hermes-engine: b7f913a6c7eadb06fbe2a9519e80b92bbb1fd12a
+  hermes-engine: 30cc42d16a9911849b72f5ac9af24a9df5f49904
   RCTDeprecation: a4c521821fab57cbb125b36effe84d897d0dfa12
   RCTRequired: 9f3a7e5645d4bc3f551593de7550bb66ab6e42bc
   RCTSwiftUI: 239ed2eb9e73de5a6f518810630f0c95e01c8702
@@ -2131,7 +2161,7 @@ SPEC CHECKSUMS:
   React: e2dc35338068bbd299c66f043ae0d7f25de8499e
   React-callinvoker: 28b25d21b124c26cebaea713ba7d801b9351dc48
   React-Core: 02ed7d2ffb70437bdf2aba074a13078a7b0b9ff0
-  React-Core-prebuilt: d1315d0975403bd506aae44147a96bfcb5feed8c
+  React-Core-prebuilt: e1da106deb995557515f0684b0ee594ff47f4e08
   React-CoreModules: b3a5a42dadcde3b5d47b325bd912eb2ced89e146
   React-cxxreact: fe8f88dda044e5905e99a00f41b7a874c3908716
   React-debug: 92944dc4d89f56d640e75498266cbde557a48189
@@ -2194,9 +2224,11 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 25c9c516839be2c5e3d3344f95dc7da5f7e63fc2
   ReactCodegen: c8f81e6c6f762dcf442a6203a1fb58f7dafc8014
   ReactCommon: 7dfc3250793bf36cf221096ff59e1179e13eef7f
-  ReactNativeDependencies: 6d76144d940da9da93bcce9eb8a27c2a60659350
-  TrustPinKit: 8fdc3633e3b8f726ba7499b317fecf12d04bd5a9
-  TrustPinReactNative: ad42a1b1ef76cb6ed2383b08721b09babe862bfa
+  ReactNativeDependencies: a623b4d347714b61ec3c6f6ca2b0bf8c8605d75e
+  TrustPinAttestKit: c421b36c3160d040825c5b96b0b263aa5de6f8a5
+  TrustPinKit: 23cf848f47b5aea0ba49d2591ee951bc0f711a74
+  TrustPinReactNative: 1ea43d0f50e5aafab6eabd2beeb93aa77e96359d
+  TrustPinReactNativeAttest: 1c64a734cc8e5aa7ca7eaaa7cf5d7d780bf473ca
   Yoga: 77dfa8673de2874e1855002ae59c68b8be9b007b
 
 PODFILE CHECKSUM: b873e498c279153c00367a6291b174423836ab1b

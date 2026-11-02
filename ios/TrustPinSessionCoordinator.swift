@@ -11,6 +11,14 @@ import TrustPinKit
     func didComplete(error: Error?)
 }
 
+/// The request token handed to React Native for one request. The data task
+/// exists only once the request's attestation headers are known, so React
+/// Native holds this token instead of the task.
+@objc public final class TrustPinRequestToken: NSObject, @unchecked Sendable {
+    fileprivate var task: URLSessionDataTask?
+    fileprivate var cancelled = false
+}
+
 /// The scoped enforcement core: owns the one
 /// `URLSession` that carries all React Native `https` traffic, with a session
 /// delegate composed through `TrustPin.makeURLSessionDelegate(forwardingTo:)`
@@ -18,6 +26,10 @@ import TrustPinKit
 /// `RCTHTTPRequestHandler` behavior:
 /// cookies, wifi-only override, upload progress as total bytes sent, redirect
 /// cookie rebuild, completion-order bookkeeping.
+///
+/// Each request also carries the headers of the attestation provider
+/// registered on `TrustPin.default` (none without one), and the TrustPin
+/// delegate gives every redirect the headers for its own URL.
 @objc public final class TrustPinSessionCoordinator: NSObject, @unchecked Sendable {
 
     @objc public static let shared = TrustPinSessionCoordinator()
@@ -41,22 +53,50 @@ import TrustPinKit
 
     /// Two-phase start so the shim can hand the token to its sink before any
     /// delegate callback can fire.
-    @objc public func makeTask(_ request: URLRequest) -> URLSessionDataTask {
-        ensureSession().dataTask(with: request)
+    @objc public func makeToken() -> TrustPinRequestToken {
+        TrustPinRequestToken()
     }
 
-    @objc public func start(_ task: URLSessionDataTask, sink: TrustPinRequestSink) {
+    /// Asks the attestation provider for the request's headers, then starts
+    /// its data task. A header the request already carries is kept.
+    @objc public func start(
+        _ request: URLRequest,
+        token: TrustPinRequestToken,
+        sink: TrustPinRequestSink
+    ) {
+        let pending = PendingRequest(request: request, token: token, sink: sink)
+        Task {
+            var attested = pending.request
+            for (name, value) in await TrustPin.default.attestationHeaders(for: pending.request)
+            where attested.value(forHTTPHeaderField: name) == nil {
+                attested.setValue(value, forHTTPHeaderField: name)
+            }
+            self.resume(attested, token: pending.token, sink: pending.sink)
+        }
+    }
+
+    @objc public func cancel(_ token: TrustPinRequestToken) {
         lock.lock()
+        token.cancelled = true
+        let task = token.task
+        if let task {
+            sinksByTaskIdentifier.removeValue(forKey: task.taskIdentifier)
+        }
+        lock.unlock()
+        task?.cancel()
+    }
+
+    private func resume(_ request: URLRequest, token: TrustPinRequestToken, sink: TrustPinRequestSink) {
+        let task = ensureSession().dataTask(with: request)
+        lock.lock()
+        guard !token.cancelled else {
+            lock.unlock()
+            return
+        }
+        token.task = task
         sinksByTaskIdentifier[task.taskIdentifier] = sink
         lock.unlock()
         task.resume()
-    }
-
-    @objc public func cancel(_ task: URLSessionDataTask) {
-        lock.lock()
-        sinksByTaskIdentifier.removeValue(forKey: task.taskIdentifier)
-        lock.unlock()
-        task.cancel()
     }
 
     // MARK: Internals
@@ -109,6 +149,18 @@ import TrustPinKit
     }
 }
 
+/// One request between `start` and its data task. `@unchecked Sendable`: the
+/// sink is only used once the task exists, from the session's serial queue.
+private struct PendingRequest: @unchecked Sendable {
+    let request: URLRequest
+    let token: TrustPinRequestToken
+    let sink: TrustPinRequestSink
+}
+
+/// The header TrustPin app attestation adds. The pinning SDK strips it from
+/// every redirect and adds the one for the new URL.
+private let attestationHeaderName = "TrustPin-Attestation"
+
 /// The coordinator's own session delegate. The `forwardingTo:` target of the
 /// TrustPin composition.
 private final class ForwardingDelegate: NSObject, URLSessionDataDelegate, @unchecked Sendable {
@@ -135,11 +187,16 @@ private final class ForwardingDelegate: NSObject, URLSessionDataDelegate, @unche
     ) {
         // Reset cookies on redirect, exactly as RCTHTTPRequestHandler does,
         // cookies are delegate-managed, so the next request rebuilds its
-        // Cookie header from shared storage.
+        // Cookie header from shared storage. The TrustPin delegate ran first
+        // and gave `request` the attestation header for its own URL, if any:
+        // keep it.
         var nextRequest = request
         if let url = request.url {
             let cookies = HTTPCookieStorage.shared.cookies(for: url) ?? []
             nextRequest.allHTTPHeaderFields = HTTPCookie.requestHeaderFields(with: cookies)
+            if let attestation = request.value(forHTTPHeaderField: attestationHeaderName) {
+                nextRequest.setValue(attestation, forHTTPHeaderField: attestationHeaderName)
+            }
         }
         completionHandler(nextRequest)
     }
