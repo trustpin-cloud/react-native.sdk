@@ -94,7 +94,7 @@ dependencies {
     // Version supplied by the consuming app's React Native Gradle plugin.
     implementation "com.facebook.react:react-android"
 
-    // Pin the native modules to the 7.1.x patch line, the same line as
+    // Pin the native modules to the 7.1.x patch line from 7.1.1, the same range as
     // @trustpin/react-native: the attestation module registers itself on the
     // pinning SDK's default instance, so both must resolve one kotlin-sdk.
     // `strictly` prevents Gradle's conflict resolution from silently selecting
@@ -104,12 +104,12 @@ dependencies {
     // `TrustPinAttestLogLevel`, so consumers see that type.
     api("cloud.trustpin:kotlin-attest") {
         version {
-            strictly("[7.1.0, 7.2.0)")
+            strictly("[7.1.1, 7.2.0)")
         }
     }
     implementation("cloud.trustpin:kotlin-sdk") {
         version {
-            strictly("[7.1.0, 7.2.0)")
+            strictly("[7.1.1, 7.2.0)")
         }
     }
 

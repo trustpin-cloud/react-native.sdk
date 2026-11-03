@@ -1,6 +1,6 @@
 {
   "name": "@trustpin/react-native",
-  "version": "7.1.0",
+  "version": "7.1.1",
   "description": "TrustPin SSL/TLS certificate pinning for React Native — in-handshake enforcement via the native TrustPin SDKs",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

@@ -1,6 +1,6 @@
 {
   "name": "@trustpin/react-native-attest",
-  "version": "7.1.0",
+  "version": "7.1.1",
   "description": "TrustPin app attestation for React Native — proves to your API that requests come from your genuine app on a genuine device, checked by your own TrustPin verifier",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
