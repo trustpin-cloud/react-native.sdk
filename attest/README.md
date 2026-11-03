@@ -171,8 +171,10 @@ TrustPinAttest.prefetch();
 
 Each token is then bound to the request's `Authorization` value: only its
 SHA-256 travels, and a token taken from one session is useless with another.
-`setTokenBinding(value)` binds to a fixed value instead. A new binding renews
-the token with the same device key.
+`setTokenBinding(value)` binds to a fixed value instead; each mode clears the
+other. `setTokenBinding(null)` removes the fixed binding only;
+`bindToHeader(null)` stops header binding and also clears a fixed binding. A
+new binding renews the token with the same device key.
 
 ## Sensitive operations: assertions
 
@@ -183,6 +185,9 @@ digest of your choice, typically the request body:
 ```ts
 const body = JSON.stringify({ amount: '1.00', to: 'demo' });
 const headers = { Authorization: `Bearer ${session}`, 'Content-Type': 'application/json' };
+// With header binding, ask for this request's token first, so it is bound to
+// this Authorization value; then add the assertion.
+Object.assign(headers, await TrustPinAttest.attestationHeaders(url, { method: 'POST', headers }));
 Object.assign(headers, await TrustPinAttest.assertionHeaders(sha256(body))); // 32 bytes
 await fetch(url, { method: 'POST', headers, body });
 ```
@@ -206,7 +211,10 @@ the build, never from a file:
   environment, or pass `TrustPinReactNativeAttest.start(debugToken:)` from a
   debug-only build setting. Ignored on devices.
 - **Android:** pass `TrustPinReactNativeAttest.start(this, level, debugToken)`
-  from a debug-only `BuildConfig` field. Used only in debuggable builds.
+  from a debug-only `BuildConfig` field. Used only in debuggable builds. A
+  debug token identifies the app by the package name it runs under, so a
+  debug build with an `applicationIdSuffix` must be listed in the policy as
+  its own package.
 
 Your policy (**Allow debug tokens**) and your verifier must both allow debug
 tokens. Their tokens carry `tp.env` `debug`, which production APIs refuse.
@@ -242,7 +250,7 @@ const subscription = TrustPinAttest.onStateChange(state => {
 | `INVALID_CONFIGURATION` | A configuration value was rejected, or the file is missing |
 | `ALREADY_INITIALIZED` | Setup ran twice |
 | `NOT_SET_UP` | The native init helper never ran |
-| `UNSUPPORTED_DEVICE` | App Attest is unsupported on this device (iOS) |
+| `UNSUPPORTED_DEVICE` | This device can't attest the app, or new keys keep failing on it |
 | `EVIDENCE_UNAVAILABLE` | The device can't produce the evidence the policy requires |
 | `BINDING_REQUIRED` | The policy requires a binding and none is set yet |
 | `ATTESTATION_FAILED` | The verifier refused; see `reasons` |
